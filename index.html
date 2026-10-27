@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>跑馬仔電子計分板 (離線版)</title>
+  <title>跑馬仔電子計分板 (完全離線版)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #121212; color: #f5f5f7; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
@@ -103,7 +103,7 @@
     .pot-title { font-size: clamp(17px, 2.8vw, 26px); color: #ffd60a; font-weight: bold; }
     .pot-amount { font-size: clamp(28px, 5.2vw, 50px); font-weight: 800; color: #ffd60a; }
 
-    /* 右下角浮動「計分入帳」大按鈕 (方便 iPad 單手操作) */
+    /* 右下角浮動「計分入帳」大按鈕 */
     #fab-score {
       position: fixed;
       right: max(16px, env(safe-area-inset-right));
@@ -141,7 +141,6 @@
     
     .opt-btn { background: #2c2c2e; color: #fff; border: 2px solid transparent; padding: 14px 6px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; text-align: center; overflow-wrap: anywhere; }
     .opt-btn:active { background: #3a3a3c; }
-    .wizard-score { font-size: 26px; display: block; margin-top: 4px; }
     .submit-btn { width: 100%; padding: 14px; background: #34c759; color: #fff; font-size: 19px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; }
     .btn-undo { background: #3a2e18; border: 1px solid #ff9f0a; color: #ff9f0a; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
 
@@ -176,7 +175,7 @@
     <button onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
-  <!-- iPad 主看板 (點擊任何玩家卡片或右下角大按鈕即可入帳) -->
+  <!-- iPad 主看板 -->
   <div id="ipad-view" class="hidden">
     <div class="board-header">
       <div class="board-header-left">
@@ -230,7 +229,7 @@
 
   <!-- 開局設定介面 -->
   <div id="setup-view" class="hidden">
-    <div class="setup-title">🀄️ 設定牌局</div>
+    <div class="setup-title" id="setup-title">🀄️ 設定牌局</div>
     <div class="form-group">
       <label>玩法版本</label>
       <div class="mode-select">
@@ -248,6 +247,7 @@
       </div>
     </div>
     <button type="button" class="btn-start" onclick="handleStart()">確定開局</button>
+    <button type="button" class="opt-btn" style="width:100%;margin-top:10px;" onclick="leaveToLobby()">返回大堂</button>
   </div>
 
   <!-- 統計彈窗 -->
@@ -286,7 +286,7 @@
   <!-- 設定與選項 -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
-    <button class="opt-btn" style="width:100%;margin-top:12px;" onclick="$('options-menu').close();leaveToLobby()">返回房間列表</button>
+    <button class="opt-btn" style="width:100%;margin-top:12px;" onclick="$('options-menu').close();leaveToLobby()">返回房間大堂</button>
     <button class="opt-btn" style="width:100%;margin-top:10px;" onclick="$('options-menu').close();editSetup()">修改玩家名稱／玩法</button>
     <button class="btn-start" style="margin-top:20px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
@@ -294,9 +294,7 @@
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-const roomParam = new URLSearchParams(location.search).get('room');
-const localRoomSlot = ['1','2','3'].includes(roomParam) ? roomParam : null;
-const roomStorageKey = localRoomSlot ? 'mahjong-local-room-' + localRoomSlot : null;
+let currentSlot = 1;
 
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 let state = { version: 2, revision: 0, createdAt: new Date().toISOString(), isRake: true, names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [] };
@@ -305,28 +303,64 @@ let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, 
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
 
+function getStorageKey(slot){
+  return 'mahjong-local-room-' + slot;
+}
+
 function persist(){
-  if (!roomStorageKey) return;
   try {
-    localStorage.setItem(roomStorageKey, JSON.stringify(state));
+    localStorage.setItem(getStorageKey(currentSlot), JSON.stringify(state));
   } catch(e){}
 }
 
+/* 純前端切換房間（絕不發出 HTTP 請求，100% 離線可用） */
+function selectRoom(slot){
+  currentSlot = slot;
+  $('room-lobby').classList.add('hidden');
+  try {
+    const raw = localStorage.getItem(getStorageKey(currentSlot));
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved && saved.names) {
+        state = saved;
+        showBoardView();
+        return;
+      }
+    }
+  } catch(e){}
+  
+  // 未開局則顯示開局介面
+  state = { version: 2, revision: 0, createdAt: new Date().toISOString(), isRake: true, names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [] };
+  $('setup-title').textContent = '🀄️ 設定牌局（房間 ' + currentSlot + '）';
+  state.names.forEach((n, i) => $('p-name-' + i).value = n);
+  toggleRake(state.isRake);
+  $('setup-view').classList.remove('hidden');
+}
+
+function showBoardView(){
+  $('setup-view').classList.add('hidden');
+  $('room-toolbar').classList.remove('hidden');
+  $('ipad-view').classList.remove('hidden');
+  $('fab-score').classList.remove('hidden');
+  renderBoard();
+}
+
 function showLocalLobby(){
+  $('setup-view').classList.add('hidden');
+  $('ipad-view').classList.add('hidden');
+  $('fab-score').classList.add('hidden');
+  $('room-toolbar').classList.add('hidden');
   $('room-lobby').classList.remove('hidden');
+  
   $('local-room-list').replaceChildren();
   for (let i = 1; i <= 3; i++) {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
     btn.style.cssText = 'min-height:80px;text-align:left;padding:16px;';
     let saved = null;
-    try { saved = JSON.parse(localStorage.getItem('mahjong-local-room-' + i)); } catch(e){}
+    try { saved = JSON.parse(localStorage.getItem(getStorageKey(i))); } catch(e){}
     btn.textContent = '房間 ' + i + ' · ' + (saved ? `繼續牌局（${saved.history?.length || 0} 筆紀錄）` : '建立新牌局');
-    btn.onclick = () => {
-      const url = new URL(location.href);
-      url.searchParams.set('room', String(i));
-      location.href = url.href;
-    };
+    btn.onclick = () => selectRoom(i);
     $('local-room-list').append(btn);
   }
 }
@@ -338,11 +372,7 @@ function handleStart(){
     state.createdAt = new Date().toISOString();
   }
   persist();
-  $('setup-view').classList.add('hidden');
-  $('room-toolbar').classList.remove('hidden');
-  $('ipad-view').classList.remove('hidden');
-  $('fab-score').classList.remove('hidden');
-  renderBoard();
+  showBoardView();
 }
 
 function editSetup(){
@@ -354,9 +384,7 @@ function editSetup(){
 }
 
 function leaveToLobby(){
-  const url = new URL(location.href);
-  url.search = '';
-  location.href = url.href;
+  showLocalLobby();
 }
 
 function toggleRake(v){
@@ -484,9 +512,7 @@ function renderBoard(){
   });
 }
 
-/* =========================================
-   單機 iPad 控制精靈 (Wizard Modal)
-   ========================================= */
+/* 單機計分彈窗 (Wizard) */
 function openScoreModal(){
   wizardHome();
   wizardGo('player');
@@ -633,9 +659,6 @@ function zeroScores(){
   renderBoard();
 }
 
-/* =========================================
-   統計與歷史紀錄
-   ========================================= */
 function logTitle(e){
   return ACTION_NAMES[e.action] + (e.kongWin ? '＋槓上自摸' : '');
 }
@@ -718,24 +741,9 @@ function exportHistory(){
 
 function openOptions(){ $('options-menu').showModal(); }
 
-// 初始化
+// 啟動邏輯：預設直接開啟大堂，所有跳轉皆在頁面內完成
 window.addEventListener('DOMContentLoaded', () => {
-  if (!localRoomSlot) {
-    showLocalLobby();
-    return;
-  }
-  try {
-    const saved = JSON.parse(localStorage.getItem(roomStorageKey));
-    if (saved && saved.names) {
-      state = saved;
-      $('room-toolbar').classList.remove('hidden');
-      $('ipad-view').classList.remove('hidden');
-      $('fab-score').classList.remove('hidden');
-      renderBoard();
-      return;
-    }
-  } catch(e){}
-  $('setup-view').classList.remove('hidden');
+  showLocalLobby();
 });
 </script>
 </body>
