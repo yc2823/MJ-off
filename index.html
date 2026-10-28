@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>跑馬仔電子計分板 (iPad 離線大鍵版)</title>
+  <title>跑馬仔電子計分板 (離線大鍵 + QR分享版)</title>
+  <!-- 載入連線套件 (若離線會自動平滑忽略，絕不卡死) -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #121212; color: #f5f5f7; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
@@ -22,7 +25,7 @@
     .mode-btn.active { border-color: #34c759; background: #1e3a24; color: #30d158; }
     .btn-start { width: 100%; padding: 16px 10px; background: #34c759; color: #fff; border: none; border-radius: 14px; font-size: 20px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-    /* iPad 看板主畫面 (滿版不縮放) */
+    /* 看板主畫面 (iPad 橫芒 / iPhone 直芒滿版) */
     #ipad-view {
       width: 100vw;
       height: 100dvh;
@@ -65,13 +68,7 @@
     #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 13px; padding: 2px 8px; border-radius: 4px; margin-right: 8px; }
 
     /* 四位玩家卡片容器 */
-    .grid-container {
-      display: grid;
-      gap: 14px;
-      flex: 1;
-      min-height: 0;
-      width: 100%;
-    }
+    .grid-container { display: grid; gap: 14px; flex: 1; min-height: 0; width: 100%; }
     .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
     .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(54px, 10dvh, 84px); }
 
@@ -88,10 +85,7 @@
       cursor: pointer;
       transition: transform 0.08s, border-color 0.08s;
     }
-    .player-card:active {
-      transform: scale(0.985);
-      border-color: #ffd60a;
-    }
+    .player-card:active { transform: scale(0.985); border-color: #ffd60a; }
     .player-name { font-size: clamp(22px, 3.4vw, 34px); color: #98989d; margin-bottom: 4px; font-weight: 600; }
     .player-score { font-size: clamp(48px, 8.5vw, 90px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
@@ -103,7 +97,7 @@
     .pot-title { font-size: clamp(18px, 2.8vw, 26px); color: #ffd60a; font-weight: bold; }
     .pot-amount { font-size: clamp(30px, 5.2vw, 54px); font-weight: 800; color: #ffd60a; }
 
-    /* 右下角浮動「計分入帳」大按鈕 */
+    /* 浮動「記一手」大按鈕 */
     #fab-score {
       position: fixed;
       right: max(20px, env(safe-area-inset-right));
@@ -125,17 +119,15 @@
 
     /* 頂部導航列 */
     #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 8px; justify-content: center; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: #121212; }
-    #room-toolbar button { flex: 1; max-width: 150px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 14.5px; padding: 6px; font-weight: 600; cursor: pointer; }
+    #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 14px; padding: 4px; font-weight: 600; cursor: pointer; }
 
-    /* 通用彈窗樣式 */
+    /* 彈窗通用樣式 */
     dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
     dialog::backdrop { background: rgba(0, 0, 0, 0.82); }
 
-    /* =========================================
-       iPad 專屬：超大按鍵計分輸入彈窗
-       ========================================= */
+    /* iPad 專屬：超大按鍵計分輸入彈窗 */
     #score-modal {
-      width: min(94vw, 880px); /* 闊度大幅拉闊至 880px，充分利用橫芒空間 */
+      width: min(94vw, 880px);
       padding: 24px;
       border: 2px solid #555;
       border-radius: 22px;
@@ -160,34 +152,18 @@
       border: 1px solid #444;
       cursor: pointer;
     }
-    #wizard-player {
-      font-size: 28px;
-      font-weight: 800;
-      color: #ffd60a;
-      letter-spacing: 1px;
-    }
-    #wizard-title {
-      font-size: 24px;
-      margin: 10px 0 18px;
-      text-align: center;
-      color: #e5e5ea;
-      font-weight: 700;
-    }
-    #wizard-buttons {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
+    #wizard-player { font-size: 28px; font-weight: 800; color: #ffd60a; letter-spacing: 1px; }
+    #wizard-title { font-size: 24px; margin: 10px 0 18px; text-align: center; color: #e5e5ea; font-weight: 700; }
+    #wizard-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     
-    /* 大按鍵樣式 */
     .opt-btn {
       background: #2c2c2e;
       color: #fff;
       border: 2px solid transparent;
-      min-height: 84px; /* 高度大幅提升至 84px */
+      min-height: 84px;
       padding: 16px 10px;
       border-radius: 16px;
-      font-size: 25px; /* 字體加大至 25px */
+      font-size: 25px;
       font-weight: bold;
       cursor: pointer;
       text-align: center;
@@ -197,13 +173,9 @@
       justify-content: center;
       transition: background 0.1s, transform 0.08s;
     }
-    .opt-btn:active {
-      background: #3a3a3c;
-      transform: scale(0.98);
-      border-color: #ffd60a;
-    }
+    .opt-btn:active { background: #3a3a3c; transform: scale(0.98); border-color: #ffd60a; }
 
-    /* 「自摸」特大招牌按鍵 */
+    /* 「自摸」特大招牌鍵 */
     .opt-btn-win {
       grid-column: span 2;
       min-height: 96px;
@@ -213,23 +185,19 @@
       border: 2px solid #34c759;
       box-shadow: 0 4px 16px rgba(52, 199, 89, 0.2);
     }
-    .opt-btn-win:active {
-      background: #285430;
-      border-color: #30d158;
-    }
+    .opt-btn-win:active { background: #285430; border-color: #30d158; }
 
-    /* 選馬特大按鍵 (0至5隻) */
-    .horse-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      gap: 14px !important;
-    }
-    .horse-btn {
-      min-height: 100px;
-      font-size: 30px;
-    }
+    /* 選馬 0-5 隻 (3x2 大方塊) */
+    .horse-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 14px !important; }
+    .horse-btn { min-height: 100px; font-size: 30px; }
 
     .submit-btn { width: 100%; padding: 18px; background: #34c759; color: #fff; font-size: 22px; font-weight: bold; border: none; border-radius: 14px; cursor: pointer; margin-top: 12px; }
     .btn-undo { background: #3a2e18; border: 1.5px solid #ff9f0a; color: #ff9f0a; padding: 8px 16px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+
+    /* QR Code 視窗樣式 */
+    #room-qr { text-align: center; }
+    #room-qrcode { background: white; width: fit-content; padding: 14px; margin: 16px auto; border-radius: 12px; }
+    #room-link { display: block; color: #70baff; overflow-wrap: anywhere; font-size: 14px; margin-bottom: 12px; }
 
     /* 統計彈窗專用 */
     .stats-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
@@ -249,20 +217,21 @@
 
   <!-- 本機房間大堂 -->
   <section id="room-lobby" class="hidden" style="width:calc(100% - 24px);max-width:540px;margin:24px auto">
-    <h1>🀄 跑馬仔計分板 (離線版)</h1>
-    <p style="color:#aaa;margin:12px 0 16px;font-size:16px;">資料完全保存在 iPad 本機，毋須任何網絡連線。</p>
+    <h1>🀄 跑馬仔計分板 (離線/QR聯網雙用)</h1>
+    <p style="color:#aaa;margin:12px 0 16px;font-size:16px;">無網時完全離線本機可用；有網時可即時產生 QR Code 畀雀友手機睇分。</p>
     <div id="local-room-list" style="display:grid;gap:14px;"></div>
   </section>
 
   <!-- 頂部工具列 -->
   <nav id="room-toolbar" class="hidden">
+    <button id="btn-qr-share" onclick="openRoomQR()">📲 分享 QR</button>
     <button onclick="openStats()">📊 統計</button>
     <button onclick="openHistory()">📋 紀錄</button>
     <button onclick="zeroScores()">🔄 分數歸零</button>
     <button onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
-  <!-- iPad 主看板 (點擊任何玩家卡片或右下角大按鈕即可入帳) -->
+  <!-- iPad 主看板 -->
   <div id="ipad-view" class="hidden">
     <div class="board-header">
       <div class="board-header-left">
@@ -271,7 +240,7 @@
       </div>
       <div class="board-header-right">
         <span id="board-created-time">建立: --:--</span>
-        <span style="color:#30d158;font-weight:bold;">● 本機離線模式</span>
+        <span id="online-status-badge" style="color:#30d158;font-weight:bold;">● 本機模式</span>
       </div>
     </div>
 
@@ -281,7 +250,7 @@
         <span class="tag">上一手</span>
         <span id="board-recent-text">--</span>
       </div>
-      <button type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷上一手</button>
+      <button id="btn-recent-undo" type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷上一手</button>
     </div>
 
     <div id="board-grid" class="grid-container grid-4">
@@ -299,6 +268,15 @@
 
   <!-- 浮動計分按鈕 -->
   <button id="fab-score" class="hidden" onclick="openScoreModal()">＋ 記一手</button>
+
+  <!-- QR Code 分享彈窗 -->
+  <dialog id="room-qr">
+    <h2>📲 雀友睇分 QR Code</h2>
+    <div id="room-qrcode"></div>
+    <a id="room-link" target="_blank"></a>
+    <p style="color:#8e8e93;font-size:15px;line-height:1.5;">雀友手機掃描後會即時同步計分板（只讀模式，無法修改）。<br>iPad 頁面需保持連線。</p>
+    <button class="btn-start" style="margin-top:16px;" onclick="this.closest('dialog').close()">關閉</button>
+  </dialog>
 
   <!-- 超大按鍵計分入帳控制彈窗 (Wizard) -->
   <dialog id="score-modal">
@@ -383,12 +361,107 @@
 const $ = id => document.getElementById(id);
 let currentSlot = 1;
 
+// 檢查是否為透過 QR 加入的手機「睇分端」
+const joinPeerId = new URLSearchParams(location.search).get('join');
+const isViewerOnly = !!joinPeerId;
+
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 let state = { version: 2, revision: 0, createdAt: new Date().toISOString(), isRake: true, names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [] };
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
+
+/* P2P 連線模組 (僅於聯網時生效，失敗或離線會自動忽略) */
+let peer = null;
+const clients = new Set();
+let shareURL = '';
+
+function initP2P(){
+  if (typeof Peer === 'undefined' || isViewerOnly) return;
+  try {
+    peer = new Peer();
+    peer.on('open', id => {
+      $('online-status-badge').textContent = '● 已聯網 · 可掃碼';
+      $('online-status-badge').style.color = '#30d158';
+      const url = new URL(location.href);
+      url.search = ''; url.hash = '';
+      url.searchParams.set('join', id);
+      shareURL = url.href;
+      renderQR();
+    });
+    peer.on('connection', conn => {
+      clients.add(conn);
+      conn.on('open', () => {
+        conn.send({ type: 'STATE', state });
+      });
+      conn.on('close', () => clients.delete(conn));
+    });
+    peer.on('error', () => {
+      $('online-status-badge').textContent = '● 本機離線模式';
+    });
+  } catch(e) {
+    $('online-status-badge').textContent = '● 本機離線模式';
+  }
+}
+
+function broadcastToViewers(){
+  if (!clients.size) return;
+  clients.forEach(c => {
+    try { if (c.open) c.send({ type: 'STATE', state }); } catch(e){}
+  });
+}
+
+function renderQR(){
+  $('room-link').textContent = shareURL || '準備連線中…';
+  $('room-link').href = shareURL || '#';
+  $('room-qrcode').replaceChildren();
+  if (shareURL && typeof QRCode !== 'undefined') {
+    new QRCode($('room-qrcode'), { text: shareURL, width: 220, height: 220 });
+  }
+}
+
+function openRoomQR(){
+  if (!navigator.onLine || !shareURL) {
+    alert('目前處於離線狀態，請先連接 Wi-Fi 或熱點後再產生連線 QR Code。');
+    return;
+  }
+  renderQR();
+  $('room-qr').showModal();
+}
+
+/* 睇分端 (手機掃碼進入) */
+function startViewerMode(){
+  $('online-status-badge').textContent = '● 睇分同步中…';
+  $('btn-qr-share').classList.add('hidden');
+  $('fab-score').classList.add('hidden');
+  $('btn-recent-undo')?.classList.add('hidden');
+  $('room-toolbar').querySelectorAll('button').forEach(b => {
+    if (b.textContent.includes('歸零') || b.textContent.includes('設定')) b.classList.add('hidden');
+  });
+
+  if (typeof Peer === 'undefined') {
+    alert('無法載入連線套件，請檢查手機網絡');
+    return;
+  }
+  const viewerPeer = new Peer();
+  viewerPeer.on('open', () => {
+    const conn = viewerPeer.connect(joinPeerId, { reliable: true });
+    conn.on('open', () => {
+      $('online-status-badge').textContent = '● 已同步 iPad 分數';
+    });
+    conn.on('data', data => {
+      if (data.type === 'STATE') {
+        state = data.state;
+        renderBoard();
+      }
+    });
+    conn.on('close', () => {
+      $('online-status-badge').textContent = '● 連線中斷';
+    });
+  });
+  showBoardView();
+}
 
 function getStorageKey(slot){
   return 'mahjong-local-room-' + slot;
@@ -398,6 +471,7 @@ function persist(){
   try {
     localStorage.setItem(getStorageKey(currentSlot), JSON.stringify(state));
   } catch(e){}
+  broadcastToViewers();
 }
 
 function selectRoom(slot){
@@ -410,6 +484,7 @@ function selectRoom(slot){
       if (saved && saved.names) {
         state = saved;
         showBoardView();
+        initP2P();
         return;
       }
     }
@@ -426,7 +501,7 @@ function showBoardView(){
   $('setup-view').classList.add('hidden');
   $('room-toolbar').classList.remove('hidden');
   $('ipad-view').classList.remove('hidden');
-  $('fab-score').classList.remove('hidden');
+  if (!isViewerOnly) $('fab-score').classList.remove('hidden');
   renderBoard();
 }
 
@@ -458,9 +533,11 @@ function handleStart(){
   }
   persist();
   showBoardView();
+  initP2P();
 }
 
 function editSetup(){
+  if (isViewerOnly) return;
   state.names.forEach((n, i) => $('p-name-' + i).value = n);
   toggleRake(state.isRake);
   $('ipad-view').classList.add('hidden');
@@ -597,16 +674,16 @@ function renderBoard(){
   });
 }
 
-/* =========================================
-   單機 iPad 控制精靈 (超大按鍵排版)
-   ========================================= */
+/* 控制彈窗 */
 function openScoreModal(){
+  if (isViewerOnly) return;
   wizardHome();
   wizardGo('player');
   $('score-modal').showModal();
 }
 
 function startActionFor(playerIndex){
+  if (isViewerOnly) return;
   wizardHome();
   selectedPlayer = playerIndex;
   wizardGo('action');
@@ -659,7 +736,6 @@ function renderWizard(){
     state.names.forEach((n, i) => btn(n, () => { selectedPlayer = i; wizardGo('action'); }));
   } else if (wizardStep === 'action') {
     $('wizard-title').textContent = '揀結算動作';
-    // 自摸使用特大顯眼按鍵 (橫跨兩欄、加大加高)
     btn('自摸', () => setAction('win'), 'opt-btn-win');
     btn('明槓', () => setAction('ming'));
     btn('暗槓', () => setAction('an'));
@@ -703,7 +779,6 @@ function renderWizard(){
   } else if (wizardStep === 'horse') {
     $('wizard-title').textContent = '揀中馬隻數';
     $('wizard-buttons').className = 'horse-grid';
-    // 0 到 5 隻以 3x2 特大方格顯示
     for (let i = 0; i <= 5; i++) {
       btn(i + ' 隻', () => { horseCount = i; commitAction(); }, 'horse-btn');
     }
@@ -734,6 +809,7 @@ function commitAction(){
 }
 
 function undoLastAction(){
+  if (isViewerOnly) return;
   const lastAction = [...state.history].reverse().find(l => l.kind === 'action');
   if (!lastAction) return;
   if (!confirm('確定撤銷上一手？分數同抽水箱會返回該動作之前。')) return;
@@ -745,6 +821,7 @@ function undoLastAction(){
 }
 
 function zeroScores(){
+  if (isViewerOnly) return;
   if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？無法復原。')) return;
   state.scores = [0, 0, 0, 0];
   state.pot = 0;
@@ -835,10 +912,17 @@ function exportHistory(){
   a.click();
 }
 
-function openOptions(){ $('options-menu').showModal(); }
+function openOptions(){
+  if (isViewerOnly) return;
+  $('options-menu').showModal();
+}
 
 window.addEventListener('DOMContentLoaded', () => {
-  showLocalLobby();
+  if (isViewerOnly) {
+    startViewerMode();
+  } else {
+    showLocalLobby();
+  }
 });
 </script>
 </body>
