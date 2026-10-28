@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>跑馬仔電子計分板 (離線大鍵 + QR分享版)</title>
-  <!-- 載入連線套件 (若離線會自動平滑忽略，絕不卡死) -->
+  <title>跑馬仔電子計分板 (iPad 離線大鍵版)</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -125,7 +124,9 @@
     dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
     dialog::backdrop { background: rgba(0, 0, 0, 0.82); }
 
-    /* iPad 專屬：超大按鍵計分輸入彈窗 */
+    /* =========================================
+       iPad 專屬：超大按鍵計分輸入彈窗
+       ========================================= */
     #score-modal {
       width: min(94vw, 880px);
       padding: 24px;
@@ -154,8 +155,15 @@
     }
     #wizard-player { font-size: 28px; font-weight: 800; color: #ffd60a; letter-spacing: 1px; }
     #wizard-title { font-size: 24px; margin: 10px 0 18px; text-align: center; color: #e5e5ea; font-weight: 700; }
-    #wizard-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     
+    /* 保持雙欄對齊 */
+    #wizard-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    
+    /* 大按鍵標準樣式 */
     .opt-btn {
       background: #2c2c2e;
       color: #fff;
@@ -163,7 +171,7 @@
       min-height: 84px;
       padding: 16px 10px;
       border-radius: 16px;
-      font-size: 25px;
+      font-size: 24px;
       font-weight: bold;
       cursor: pointer;
       text-align: center;
@@ -186,6 +194,22 @@
       box-shadow: 0 4px 16px rgba(52, 199, 89, 0.2);
     }
     .opt-btn-win:active { background: #285430; border-color: #30d158; }
+
+    /* 槓上自摸：無（綠色）*/
+    .opt-btn-kong-no {
+      background: #1e3a24;
+      color: #30d158;
+      border: 2px solid #34c759;
+    }
+    .opt-btn-kong-no:active { background: #285430; }
+
+    /* 槓上自摸：有（紅色）*/
+    .opt-btn-kong-yes {
+      background: #3a1e1e;
+      color: #ff453a;
+      border: 2px solid #ff453a;
+    }
+    .opt-btn-kong-yes:active { background: #542828; }
 
     /* 選馬 0-5 隻 (3x2 大方塊) */
     .horse-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 14px !important; }
@@ -211,6 +235,11 @@
     
     .history-entry { font-size: 17px; line-height: 1.8; padding: 16px 0; border-bottom: 1px solid #444; }
     .history-entry strong { font-size: 19px; color: #ffd60a; }
+
+    /* 執位提醒彈窗樣式 */
+    #seat-alert-modal { text-align: center; border: 2.5px solid #ffd60a; box-shadow: 0 0 35px rgba(255, 214, 10, 0.4); max-width: 500px; }
+    #seat-alert-modal h2 { font-size: 30px; color: #ffd60a; margin-bottom: 12px; }
+    #seat-alert-modal p { font-size: 18px; color: #e5e5ea; line-height: 1.5; margin-bottom: 24px; }
   </style>
 </head>
 <body>
@@ -239,7 +268,7 @@
         <h2 id="board-mode-tag">跑馬仔 · 抽水版</h2>
       </div>
       <div class="board-header-right">
-        <span id="board-created-time">建立: --:--</span>
+        <span id="board-start-time">開始: --:--</span>
         <span id="online-status-badge" style="color:#30d158;font-weight:bold;">● 本機模式</span>
       </div>
     </div>
@@ -268,6 +297,16 @@
 
   <!-- 浮動計分按鈕 -->
   <button id="fab-score" class="hidden" onclick="openScoreModal()">＋ 記一手</button>
+
+  <!-- 執位強烈提示彈窗 -->
+  <dialog id="seat-alert-modal">
+    <h2>⏰ 夠鐘執位！</h2>
+    <p id="seat-alert-msg">牌局已進行滿 120 分鐘，請各位雀友起身抽位換位！</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <button class="btn-start" onclick="dismissSeatAlert(true)">✅ 確認已執位（重新計時）</button>
+      <button class="opt-btn" style="min-height:56px;font-size:18px;" onclick="dismissSeatAlert(false)">⏳ 稍後 15 分鐘再提醒</button>
+    </div>
+  </dialog>
 
   <!-- QR Code 分享彈窗 -->
   <dialog id="room-qr">
@@ -348,9 +387,24 @@
     <button class="btn-start" style="margin-top:18px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 設定與選項 -->
+  <!-- 設定與選項 (含執位定時設定) -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
+    
+    <div style="background:#2c2c2e;padding:16px;border-radius:14px;margin:16px 0;text-align:left;">
+      <label style="font-size:17px;font-weight:bold;color:#ffd60a;display:block;margin-bottom:10px;">⏰ 定時執位提醒設定</label>
+      <select id="seat-timer-select" onchange="updateSeatTimerConfig()" style="width:100%;min-height:48px;font-size:17px;background:#1c1c1e;color:#fff;border:1px solid #666;border-radius:8px;padding:8px;">
+        <option value="0">不提示</option>
+        <option value="60">每 60 分鐘提示</option>
+        <option value="90">每 90 分鐘提示</option>
+        <option value="120" selected>每 120 分鐘 (2小時) 提示</option>
+        <option value="custom">自訂分鐘數...</option>
+      </select>
+      <div id="seat-timer-custom-wrap" class="hidden" style="margin-top:10px;">
+        <input id="seat-timer-custom-val" type="number" min="1" max="600" placeholder="輸入分鐘 (例如 75)" style="width:100%;min-height:46px;font-size:16px;background:#1c1c1e;color:#fff;border:1px solid #666;border-radius:8px;padding:8px;">
+      </div>
+    </div>
+
     <button class="opt-btn" style="width:100%;margin-top:14px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();leaveToLobby()">返回房間大堂</button>
     <button class="opt-btn" style="width:100%;margin-top:12px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();editSetup()">修改玩家名稱／玩法</button>
     <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
@@ -361,18 +415,89 @@
 const $ = id => document.getElementById(id);
 let currentSlot = 1;
 
-// 檢查是否為透過 QR 加入的手機「睇分端」
 const joinPeerId = new URLSearchParams(location.search).get('join');
 const isViewerOnly = !!joinPeerId;
 
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
-let state = { version: 2, revision: 0, createdAt: new Date().toISOString(), isRake: true, names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [] };
+let state = {
+  version: 2,
+  revision: 0,
+  startedAt: new Date().toISOString(), // 牌局開始時間
+  isRake: true,
+  names: ['東家','南家','西家','北家'],
+  scores: [0,0,0,0],
+  pot: 0,
+  history: [],
+  seatReminderInterval: 120, // 提示間隔 (分鐘)，0 代表關閉
+  nextSeatAlertAt: Date.now() + 120 * 60 * 1000
+};
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
 
-/* P2P 連線模組 (僅於聯網時生效，失敗或離線會自動忽略) */
+/* Web Audio 產生響亮清脆叮咚鈴聲 (100% 離線可用) */
+function playDingDong(){
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.16);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + idx * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.16 + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.16);
+      osc.stop(ctx.currentTime + idx * 0.16 + 0.45);
+    });
+  } catch(e){}
+}
+
+/* 執位提醒檢查器 */
+setInterval(() => {
+  if (isViewerOnly || !state.seatReminderInterval || state.seatReminderInterval <= 0) return;
+  if (Date.now() >= state.nextSeatAlertAt) {
+    playDingDong();
+    $('seat-alert-msg').textContent = `牌局已進行滿 ${state.seatReminderInterval} 分鐘，請各位雀友起身抽位換位！`;
+    $('seat-alert-modal').showModal();
+    // 暫設 15 分鐘後再響，避免連續彈出
+    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
+    persist();
+  }
+}, 10000);
+
+function dismissSeatAlert(resetTimer){
+  $('seat-alert-modal').close();
+  if (resetTimer) {
+    state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
+  } else {
+    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000; // 稍後 15 分鐘
+  }
+  persist();
+}
+
+function updateSeatTimerConfig(){
+  const sel = $('seat-timer-select').value;
+  if (sel === 'custom') {
+    $('seat-timer-custom-wrap').classList.remove('hidden');
+    const custom = parseInt($('seat-timer-custom-val').value, 10);
+    state.seatReminderInterval = (custom && custom > 0) ? custom : 60;
+  } else {
+    $('seat-timer-custom-wrap').classList.add('hidden');
+    state.seatReminderInterval = parseInt(sel, 10);
+  }
+  if (state.seatReminderInterval > 0) {
+    state.nextSeatAlertAt = Date.now() + state.seatReminderInterval * 60 * 1000;
+  }
+  persist();
+}
+
+/* P2P 連線模組 */
 let peer = null;
 const clients = new Set();
 let shareURL = '';
@@ -392,16 +517,14 @@ function initP2P(){
     });
     peer.on('connection', conn => {
       clients.add(conn);
-      conn.on('open', () => {
-        conn.send({ type: 'STATE', state });
-      });
+      conn.on('open', () => conn.send({ type: 'STATE', state }));
       conn.on('close', () => clients.delete(conn));
     });
     peer.on('error', () => {
-      $('online-status-badge').textContent = '● 本機離線模式';
+      $('online-status-badge').textContent = '● 本機模式';
     });
   } catch(e) {
-    $('online-status-badge').textContent = '● 本機離線模式';
+    $('online-status-badge').textContent = '● 本機模式';
   }
 }
 
@@ -430,7 +553,6 @@ function openRoomQR(){
   $('room-qr').showModal();
 }
 
-/* 睇分端 (手機掃碼進入) */
 function startViewerMode(){
   $('online-status-badge').textContent = '● 睇分同步中…';
   $('btn-qr-share').classList.add('hidden');
@@ -447,18 +569,14 @@ function startViewerMode(){
   const viewerPeer = new Peer();
   viewerPeer.on('open', () => {
     const conn = viewerPeer.connect(joinPeerId, { reliable: true });
-    conn.on('open', () => {
-      $('online-status-badge').textContent = '● 已同步 iPad 分數';
-    });
+    conn.on('open', () => $('online-status-badge').textContent = '● 已同步 iPad 分數');
     conn.on('data', data => {
       if (data.type === 'STATE') {
         state = data.state;
         renderBoard();
       }
     });
-    conn.on('close', () => {
-      $('online-status-badge').textContent = '● 連線中斷';
-    });
+    conn.on('close', () => $('online-status-badge').textContent = '● 連線中斷');
   });
   showBoardView();
 }
@@ -490,7 +608,11 @@ function selectRoom(slot){
     }
   } catch(e){}
   
-  state = { version: 2, revision: 0, createdAt: new Date().toISOString(), isRake: true, names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [] };
+  state = {
+    version: 2, revision: 0, startedAt: new Date().toISOString(), isRake: true,
+    names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [],
+    seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000
+  };
   $('setup-title').textContent = '🀄️ 設定牌局（房間 ' + currentSlot + '）';
   state.names.forEach((n, i) => $('p-name-' + i).value = n);
   toggleRake(state.isRake);
@@ -529,7 +651,8 @@ function handleStart(){
   state.names = [0,1,2,3].map(i => $('p-name-' + i).value.trim() || ['東家','南家','西家','北家'][i]);
   state.isRake = $('setup-view').dataset.rake !== 'false';
   if (!state.history.length) {
-    state.createdAt = new Date().toISOString();
+    state.startedAt = new Date().toISOString();
+    state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
   }
   persist();
   showBoardView();
@@ -649,9 +772,10 @@ function renderBoard(){
   $('board-mode-tag').textContent = '跑馬仔 · ' + (state.isRake ? '抽水版' : '不抽水版');
   $('board-round-badge').textContent = computeCurrentRound();
 
-  if (state.createdAt) {
-    const t = new Date(state.createdAt).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
-    $('board-created-time').textContent = '建立: ' + t;
+  // 牌局開始時間顯示
+  if (state.startedAt) {
+    const t = new Date(state.startedAt).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
+    $('board-start-time').textContent = '開始: ' + t;
   }
 
   const lastSummary = getLatestActionSummary();
@@ -745,7 +869,8 @@ function renderWizard(){
     btn('特別糊牌', () => setAction('special_win'));
   } else if (wizardStep === 'chase_type') {
     $('wizard-title').textContent = '揀追牌種類';
-    btn('普通追牌 (每家收$10)', () => { currentAction = 'chase_normal'; commitAction(); }, 'opt-btn-win');
+    // 兩者均等對稱對齊 (各佔一欄)
+    btn('普通追牌 (每家收$10)', () => { currentAction = 'chase_normal'; commitAction(); });
     btn('百搭追牌 (一位收$30)', () => { currentAction = 'chase_wild'; wizardGo('chase_winner'); });
   } else if (wizardStep === 'chase_winner') {
     $('wizard-title').textContent = '揀追牌收款者';
@@ -774,8 +899,9 @@ function renderWizard(){
     });
   } else if (wizardStep === 'kong') {
     $('wizard-title').textContent = '有冇槓上自摸？';
-    btn('冇，只計槓錢', () => { $('kong-win').checked = false; horseCount = 0; commitAction(); });
-    btn('有，再揀中馬隻數', () => { $('kong-win').checked = true; wizardGo('horse'); }, 'opt-btn-win');
+    // 保持左右對稱均等大小，左邊無（綠色），右邊有（紅色）
+    btn('冇，只計槓錢', () => { $('kong-win').checked = false; horseCount = 0; commitAction(); }, 'opt-btn-kong-no');
+    btn('有，再揀中馬隻數', () => { $('kong-win').checked = true; wizardGo('horse'); }, 'opt-btn-kong-yes');
   } else if (wizardStep === 'horse') {
     $('wizard-title').textContent = '揀中馬隻數';
     $('wizard-buttons').className = 'horse-grid';
@@ -820,14 +946,16 @@ function undoLastAction(){
   renderBoard();
 }
 
+/* 分數歸零：保留名字規則，清空分數/紀錄/水箱，開始時間重設為現在 */
 function zeroScores(){
   if (isViewerOnly) return;
-  if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？無法復原。')) return;
+  if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？開始時間亦會重設。')) return;
   state.scores = [0, 0, 0, 0];
   state.pot = 0;
   state.history = [];
   state.revision = 0;
-  state.createdAt = new Date().toISOString();
+  state.startedAt = new Date().toISOString(); // 開始時間重置為現在
+  state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000; // 重新計算執位時間
   persist();
   renderBoard();
 }
@@ -914,6 +1042,13 @@ function exportHistory(){
 
 function openOptions(){
   if (isViewerOnly) return;
+  $('seat-timer-select').value = [0, 60, 90, 120].includes(state.seatReminderInterval) ? String(state.seatReminderInterval) : 'custom';
+  if ($('seat-timer-select').value === 'custom') {
+    $('seat-timer-custom-wrap').classList.remove('hidden');
+    $('seat-timer-custom-val').value = state.seatReminderInterval;
+  } else {
+    $('seat-timer-custom-wrap').classList.add('hidden');
+  }
   $('options-menu').showModal();
 }
 
