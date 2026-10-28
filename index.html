@@ -124,9 +124,7 @@
     dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
     dialog::backdrop { background: rgba(0, 0, 0, 0.82); }
 
-    /* =========================================
-       iPad 專屬：超大按鍵計分輸入彈窗
-       ========================================= */
+    /* iPad 專屬：超大按鍵計分輸入彈窗 */
     #score-modal {
       width: min(94vw, 880px);
       padding: 24px;
@@ -156,14 +154,12 @@
     #wizard-player { font-size: 28px; font-weight: 800; color: #ffd60a; letter-spacing: 1px; }
     #wizard-title { font-size: 24px; margin: 10px 0 18px; text-align: center; color: #e5e5ea; font-weight: 700; }
     
-    /* 保持雙欄對齊 */
     #wizard-buttons {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
     }
     
-    /* 大按鍵標準樣式 */
     .opt-btn {
       background: #2c2c2e;
       color: #fff;
@@ -268,6 +264,9 @@
         <h2 id="board-mode-tag">跑馬仔 · 抽水版</h2>
       </div>
       <div class="board-header-right">
+        <!-- 顯示每隔幾耐執位資訊與開始時間 -->
+        <span id="board-seat-info" style="color:#ffd60a;font-weight:600;">執位: 2小時</span>
+        <span>·</span>
         <span id="board-start-time">開始: --:--</span>
         <span id="online-status-badge" style="color:#30d158;font-weight:bold;">● 本機模式</span>
       </div>
@@ -301,7 +300,7 @@
   <!-- 執位強烈提示彈窗 -->
   <dialog id="seat-alert-modal">
     <h2>⏰ 夠鐘執位！</h2>
-    <p id="seat-alert-msg">牌局已進行滿 120 分鐘，請各位雀友起身抽位換位！</p>
+    <p id="seat-alert-msg">牌局已進行滿 2 小時，請各位雀友起身抽位換位！</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn-start" onclick="dismissSeatAlert(true)">✅ 確認已執位（重新計時）</button>
       <button class="opt-btn" style="min-height:56px;font-size:18px;" onclick="dismissSeatAlert(false)">⏳ 稍後 15 分鐘再提醒</button>
@@ -387,21 +386,19 @@
     <button class="btn-start" style="margin-top:18px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 設定與選項 (含執位定時設定) -->
+  <!-- 設定與選項 (僅保留 3 個選項：2小時預設、不提示、自訂分鐘) -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
     <div style="background:#2c2c2e;padding:16px;border-radius:14px;margin:16px 0;text-align:left;">
       <label style="font-size:17px;font-weight:bold;color:#ffd60a;display:block;margin-bottom:10px;">⏰ 定時執位提醒設定</label>
-      <select id="seat-timer-select" onchange="updateSeatTimerConfig()" style="width:100%;min-height:48px;font-size:17px;background:#1c1c1e;color:#fff;border:1px solid #666;border-radius:8px;padding:8px;">
+      <select id="seat-timer-select" onchange="updateSeatTimerConfig()" style="width:100%;min-height:50px;font-size:18px;background:#1c1c1e;color:#fff;border:1.5px solid #666;border-radius:10px;padding:8px 12px;">
+        <option value="120" selected>每 2 小時 (預設)</option>
         <option value="0">不提示</option>
-        <option value="60">每 60 分鐘提示</option>
-        <option value="90">每 90 分鐘提示</option>
-        <option value="120" selected>每 120 分鐘 (2小時) 提示</option>
         <option value="custom">自訂分鐘數...</option>
       </select>
-      <div id="seat-timer-custom-wrap" class="hidden" style="margin-top:10px;">
-        <input id="seat-timer-custom-val" type="number" min="1" max="600" placeholder="輸入分鐘 (例如 75)" style="width:100%;min-height:46px;font-size:16px;background:#1c1c1e;color:#fff;border:1px solid #666;border-radius:8px;padding:8px;">
+      <div id="seat-timer-custom-wrap" class="hidden" style="margin-top:12px;">
+        <input id="seat-timer-custom-val" type="number" min="1" max="600" placeholder="輸入分鐘數 (例如 75)" oninput="updateSeatTimerConfig()" style="width:100%;min-height:48px;font-size:17px;background:#1c1c1e;color:#fff;border:1.5px solid #666;border-radius:10px;padding:10px;">
       </div>
     </div>
 
@@ -422,13 +419,13 @@ const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60,
 let state = {
   version: 2,
   revision: 0,
-  startedAt: new Date().toISOString(), // 牌局開始時間
+  startedAt: new Date().toISOString(),
   isRake: true,
   names: ['東家','南家','西家','北家'],
   scores: [0,0,0,0],
   pot: 0,
   history: [],
-  seatReminderInterval: 120, // 提示間隔 (分鐘)，0 代表關閉
+  seatReminderInterval: 120, // 預設 120 分鐘
   nextSeatAlertAt: Date.now() + 120 * 60 * 1000
 };
 
@@ -436,13 +433,13 @@ let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, 
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
 
-/* Web Audio 產生響亮清脆叮咚鈴聲 (100% 離線可用) */
+/* Web Audio 鈴聲 */
 function playDingDong(){
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -463,9 +460,9 @@ setInterval(() => {
   if (isViewerOnly || !state.seatReminderInterval || state.seatReminderInterval <= 0) return;
   if (Date.now() >= state.nextSeatAlertAt) {
     playDingDong();
-    $('seat-alert-msg').textContent = `牌局已進行滿 ${state.seatReminderInterval} 分鐘，請各位雀友起身抽位換位！`;
+    const label = state.seatReminderInterval === 120 ? '2 小時' : `${state.seatReminderInterval} 分鐘`;
+    $('seat-alert-msg').textContent = `牌局已進行滿 ${label}，請各位雀友起身抽位換位！`;
     $('seat-alert-modal').showModal();
-    // 暫設 15 分鐘後再響，避免連續彈出
     state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
     persist();
   }
@@ -476,7 +473,7 @@ function dismissSeatAlert(resetTimer){
   if (resetTimer) {
     state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
   } else {
-    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000; // 稍後 15 分鐘
+    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
   }
   persist();
 }
@@ -495,6 +492,7 @@ function updateSeatTimerConfig(){
     state.nextSeatAlertAt = Date.now() + state.seatReminderInterval * 60 * 1000;
   }
   persist();
+  renderBoard();
 }
 
 /* P2P 連線模組 */
@@ -772,6 +770,13 @@ function renderBoard(){
   $('board-mode-tag').textContent = '跑馬仔 · ' + (state.isRake ? '抽水版' : '不抽水版');
   $('board-round-badge').textContent = computeCurrentRound();
 
+  // 執位資訊顯示 (例如：執位: 2小時 或 執位: 75分鐘 或 執位: 關閉)
+  const interval = state.seatReminderInterval || 0;
+  let seatText = '執位: 關閉';
+  if (interval === 120) seatText = '執位: 2小時';
+  else if (interval > 0) seatText = `執位: ${interval}分鐘`;
+  $('board-seat-info').textContent = seatText;
+
   // 牌局開始時間顯示
   if (state.startedAt) {
     const t = new Date(state.startedAt).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -869,7 +874,6 @@ function renderWizard(){
     btn('特別糊牌', () => setAction('special_win'));
   } else if (wizardStep === 'chase_type') {
     $('wizard-title').textContent = '揀追牌種類';
-    // 兩者均等對稱對齊 (各佔一欄)
     btn('普通追牌 (每家收$10)', () => { currentAction = 'chase_normal'; commitAction(); });
     btn('百搭追牌 (一位收$30)', () => { currentAction = 'chase_wild'; wizardGo('chase_winner'); });
   } else if (wizardStep === 'chase_winner') {
@@ -899,7 +903,6 @@ function renderWizard(){
     });
   } else if (wizardStep === 'kong') {
     $('wizard-title').textContent = '有冇槓上自摸？';
-    // 保持左右對稱均等大小，左邊無（綠色），右邊有（紅色）
     btn('冇，只計槓錢', () => { $('kong-win').checked = false; horseCount = 0; commitAction(); }, 'opt-btn-kong-no');
     btn('有，再揀中馬隻數', () => { $('kong-win').checked = true; wizardGo('horse'); }, 'opt-btn-kong-yes');
   } else if (wizardStep === 'horse') {
@@ -954,8 +957,8 @@ function zeroScores(){
   state.pot = 0;
   state.history = [];
   state.revision = 0;
-  state.startedAt = new Date().toISOString(); // 開始時間重置為現在
-  state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000; // 重新計算執位時間
+  state.startedAt = new Date().toISOString();
+  state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
   persist();
   renderBoard();
 }
@@ -1042,12 +1045,18 @@ function exportHistory(){
 
 function openOptions(){
   if (isViewerOnly) return;
-  $('seat-timer-select').value = [0, 60, 90, 120].includes(state.seatReminderInterval) ? String(state.seatReminderInterval) : 'custom';
-  if ($('seat-timer-select').value === 'custom') {
-    $('seat-timer-custom-wrap').classList.remove('hidden');
-    $('seat-timer-custom-val').value = state.seatReminderInterval;
-  } else {
+  // 設定選單對應狀態
+  const interval = state.seatReminderInterval;
+  if (interval === 120) {
+    $('seat-timer-select').value = '120';
     $('seat-timer-custom-wrap').classList.add('hidden');
+  } else if (interval === 0) {
+    $('seat-timer-select').value = '0';
+    $('seat-timer-custom-wrap').classList.add('hidden');
+  } else {
+    $('seat-timer-select').value = 'custom';
+    $('seat-timer-custom-wrap').classList.remove('hidden');
+    $('seat-timer-custom-val').value = interval;
   }
   $('options-menu').showModal();
 }
