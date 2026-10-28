@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>跑馬仔電子計分板 (iPad 離線大鍵版)</title>
+  <title>跑馬仔電子計分板 (iPad大鍵 + iPhone睇分版)</title>
+  <!-- 載入 P2P 與 QR Code 套件 (無網絡時自動平滑略過) -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
@@ -24,13 +25,13 @@
     .mode-btn.active { border-color: #34c759; background: #1e3a24; color: #30d158; }
     .btn-start { width: 100%; padding: 16px 10px; background: #34c759; color: #fff; border: none; border-radius: 14px; font-size: 20px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-    /* 看板主畫面 (iPad 橫芒 / iPhone 直芒滿版) */
+    /* 看板主畫面 (支援 iPad 橫芒大畫面 & iPhone 直芒滿版) */
     #ipad-view {
       width: 100vw;
       height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: calc(56px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      padding: calc(54px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
       box-sizing: border-box;
       overflow: hidden;
     }
@@ -39,62 +40,63 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 16px;
+      padding: 8px 14px;
       background: #1c1c1e;
       border-radius: 14px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       flex-shrink: 0;
+      gap: 6px;
     }
-    .board-header-left { display: flex; align-items: center; gap: 12px; }
-    .board-round-badge { background: #ffd60a; color: #000; font-weight: 800; font-size: 16px; padding: 4px 10px; border-radius: 6px; }
-    .board-header h2 { font-size: 18px; color: #fff; font-weight: 600; }
-    .board-header-right { display: flex; align-items: center; gap: 14px; font-size: 14px; color: #8e8e93; }
+    .board-header-left { display: flex; align-items: center; gap: 8px; }
+    .board-round-badge { background: #ffd60a; color: #000; font-weight: 800; font-size: 15px; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
+    .board-header h2 { font-size: 16px; color: #fff; font-weight: 600; white-space: nowrap; }
+    .board-header-right { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #8e8e93; white-space: nowrap; }
 
     /* 上一手紀錄字卡橫條 */
     #board-recent-bar {
       background: #241d08;
       border: 1.5px solid rgba(255, 214, 10, 0.4);
       border-radius: 12px;
-      padding: 8px 16px;
-      margin-bottom: 10px;
-      font-size: 14px;
+      padding: 6px 14px;
+      margin-bottom: 8px;
+      font-size: 13px;
       color: #ffd60a;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
     }
-    #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 13px; padding: 2px 8px; border-radius: 4px; margin-right: 8px; }
+    #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 12px; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
 
-    /* 四位玩家卡片容器 */
-    .grid-container { display: grid; gap: 14px; flex: 1; min-height: 0; width: 100%; }
+    /* 四位玩家卡片容器 (自適應彈性高度) */
+    .grid-container { display: grid; gap: 10px; flex: 1; min-height: 0; width: 100%; }
     .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-    .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(54px, 10dvh, 84px); }
+    .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(48px, 9dvh, 76px); }
 
     .player-card {
       background: #1c1c1e;
-      border-radius: 18px;
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       border: 2px solid #2c2c2e;
       min-height: 0;
-      padding: 8px;
+      padding: 6px;
       cursor: pointer;
       transition: transform 0.08s, border-color 0.08s;
     }
     .player-card:active { transform: scale(0.985); border-color: #ffd60a; }
-    .player-name { font-size: clamp(22px, 3.4vw, 34px); color: #98989d; margin-bottom: 4px; font-weight: 600; }
-    .player-score { font-size: clamp(48px, 8.5vw, 90px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .player-name { font-size: clamp(18px, 3.2vw, 32px); color: #98989d; margin-bottom: 2px; font-weight: 600; }
+    .player-score { font-size: clamp(40px, 8vw, 84px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
     .score-neg { color: #ff453a; }
     .score-zero { color: #8e8e93; }
 
     /* 抽水箱卡片 */
-    .pot-card { grid-column: 1 / span 2; background: #241d08; border: 2px solid #ffd60a; flex-direction: row; justify-content: space-around; padding: 8px 24px; border-radius: 16px; align-items: center; cursor: default; }
-    .pot-title { font-size: clamp(18px, 2.8vw, 26px); color: #ffd60a; font-weight: bold; }
-    .pot-amount { font-size: clamp(30px, 5.2vw, 54px); font-weight: 800; color: #ffd60a; }
+    .pot-card { grid-column: 1 / span 2; background: #241d08; border: 2px solid #ffd60a; flex-direction: row; justify-content: space-around; padding: 6px 20px; border-radius: 14px; align-items: center; cursor: default; }
+    .pot-title { font-size: clamp(16px, 2.6vw, 24px); color: #ffd60a; font-weight: bold; }
+    .pot-amount { font-size: clamp(26px, 5vw, 48px); font-weight: 800; color: #ffd60a; }
 
     /* 浮動「記一手」大按鈕 */
     #fab-score {
@@ -117,8 +119,24 @@
     }
 
     /* 頂部導航列 */
-    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 8px; justify-content: center; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: #121212; }
-    #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 14px; padding: 4px; font-weight: 600; cursor: pointer; }
+    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 6px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 8px 6px; background: #121212; }
+    #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 13.5px; padding: 4px; font-weight: 600; cursor: pointer; }
+
+    /* iPhone 專屬樣式微調 (寬度 <= 600px) */
+    @media (max-width: 600px) {
+      #ipad-view { padding-top: calc(50px + env(safe-area-inset-top)); padding-left: 8px; padding-right: 8px; }
+      .board-header { padding: 6px 10px; }
+      .board-round-badge { font-size: 13px; padding: 2px 7px; }
+      .board-header h2 { font-size: 14px; }
+      .board-header-right { font-size: 11.5px; gap: 5px; }
+      .player-card { border-radius: 14px; padding: 4px; }
+      .player-name { font-size: 19px; }
+      .player-score { font-size: 44px; }
+      .pot-card { padding: 4px 14px; border-radius: 12px; }
+      .pot-title { font-size: 16px; }
+      .pot-amount { font-size: 30px; }
+      #room-toolbar button { font-size: 12.5px; min-height: 38px; }
+    }
 
     /* 彈窗通用樣式 */
     dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
@@ -212,7 +230,7 @@
     .horse-btn { min-height: 100px; font-size: 30px; }
 
     .submit-btn { width: 100%; padding: 18px; background: #34c759; color: #fff; font-size: 22px; font-weight: bold; border: none; border-radius: 14px; cursor: pointer; margin-top: 12px; }
-    .btn-undo { background: #3a2e18; border: 1.5px solid #ff9f0a; color: #ff9f0a; padding: 8px 16px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
+    .btn-undo { background: #3a2e18; border: 1.5px solid #ff9f0a; color: #ff9f0a; padding: 7px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; }
 
     /* QR Code 視窗樣式 */
     #room-qr { text-align: center; }
@@ -252,11 +270,11 @@
     <button id="btn-qr-share" onclick="openRoomQR()">📲 分享 QR</button>
     <button onclick="openStats()">📊 統計</button>
     <button onclick="openHistory()">📋 紀錄</button>
-    <button onclick="zeroScores()">🔄 分數歸零</button>
-    <button onclick="openOptions()">⚙️ 設定</button>
+    <button id="btn-zero-scores" onclick="zeroScores()">🔄 分數歸零</button>
+    <button id="btn-settings-opt" onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
-  <!-- iPad 主看板 -->
+  <!-- 看板主畫面 (iPad 橫芒 / iPhone 睇分端) -->
   <div id="ipad-view" class="hidden">
     <div class="board-header">
       <div class="board-header-left">
@@ -264,8 +282,8 @@
         <h2 id="board-mode-tag">跑馬仔 · 抽水版</h2>
       </div>
       <div class="board-header-right">
-        <!-- 顯示每隔幾耐執位資訊與開始時間 -->
-        <span id="board-seat-info" style="color:#ffd60a;font-weight:600;">執位: 2小時</span>
+        <!-- 動態執位倒數計時器 -->
+        <span id="board-seat-countdown" style="color:#ffd60a;font-weight:700;">執位倒數: --:--:--</span>
         <span>·</span>
         <span id="board-start-time">開始: --:--</span>
         <span id="online-status-badge" style="color:#30d158;font-weight:bold;">● 本機模式</span>
@@ -274,11 +292,11 @@
 
     <!-- 上一手紀錄橫條 -->
     <div id="board-recent-bar" class="hidden">
-      <div>
+      <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
         <span class="tag">上一手</span>
         <span id="board-recent-text">--</span>
       </div>
-      <button id="btn-recent-undo" type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷上一手</button>
+      <button id="btn-recent-undo" type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷</button>
     </div>
 
     <div id="board-grid" class="grid-container grid-4">
@@ -294,7 +312,7 @@
     </div>
   </div>
 
-  <!-- 浮動計分按鈕 -->
+  <!-- 浮動計分按鈕 (iPhone 睇分端會自動隱藏) -->
   <button id="fab-score" class="hidden" onclick="openScoreModal()">＋ 記一手</button>
 
   <!-- 執位強烈提示彈窗 -->
@@ -312,7 +330,7 @@
     <h2>📲 雀友睇分 QR Code</h2>
     <div id="room-qrcode"></div>
     <a id="room-link" target="_blank"></a>
-    <p style="color:#8e8e93;font-size:15px;line-height:1.5;">雀友手機掃描後會即時同步計分板（只讀模式，無法修改）。<br>iPad 頁面需保持連線。</p>
+    <p style="color:#8e8e93;font-size:15px;line-height:1.5;">雀友用 iPhone 掃描後即可即時同步睇分（只讀模式）。<br>iPad 需保持開啟 Wi-Fi 或熱點。</p>
     <button class="btn-start" style="margin-top:16px;" onclick="this.closest('dialog').close()">關閉</button>
   </dialog>
 
@@ -386,7 +404,7 @@
     <button class="btn-start" style="margin-top:18px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 設定與選項 (僅保留 3 個選項：2小時預設、不提示、自訂分鐘) -->
+  <!-- 設定與選項 (3個選項：每2小時預設、不提示、自訂分鐘) -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
@@ -412,8 +430,19 @@
 const $ = id => document.getElementById(id);
 let currentSlot = 1;
 
+// 檢查是否為透過 QR 加入的手機「睇分端」
 const joinPeerId = new URLSearchParams(location.search).get('join');
 const isViewerOnly = !!joinPeerId;
+
+// 增加公共 STUN 伺服器，解決不同 WiFi / 5G NAT 穿透連線問題
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' }
+    ]
+  }
+};
 
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 let state = {
@@ -433,7 +462,7 @@ let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, 
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
 
-/* Web Audio 鈴聲 */
+/* Web Audio 產生叮咚提示聲 */
 function playDingDong(){
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -455,8 +484,10 @@ function playDingDong(){
   } catch(e){}
 }
 
-/* 執位提醒檢查器 */
+/* 每秒更新倒數計時器及執位檢查 */
 setInterval(() => {
+  renderSeatCountdown();
+
   if (isViewerOnly || !state.seatReminderInterval || state.seatReminderInterval <= 0) return;
   if (Date.now() >= state.nextSeatAlertAt) {
     playDingDong();
@@ -466,7 +497,26 @@ setInterval(() => {
     state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
     persist();
   }
-}, 10000);
+}, 1000);
+
+function renderSeatCountdown(){
+  if (!state.seatReminderInterval || state.seatReminderInterval <= 0) {
+    $('board-seat-countdown').textContent = '執位: 關閉';
+    return;
+  }
+  const remainingMs = Math.max(0, state.nextSeatAlertAt - Date.now());
+  const totalSec = Math.floor(remainingMs / 1000);
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  
+  if (hrs > 0) {
+    $('board-seat-countdown').textContent = `執位倒數: ${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  } else {
+    $('board-seat-countdown').textContent = `執位倒數: ${pad(mins)}:${pad(secs)}`;
+  }
+}
 
 function dismissSeatAlert(resetTimer){
   $('seat-alert-modal').close();
@@ -476,6 +526,7 @@ function dismissSeatAlert(resetTimer){
     state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
   }
   persist();
+  renderSeatCountdown();
 }
 
 function updateSeatTimerConfig(){
@@ -495,7 +546,7 @@ function updateSeatTimerConfig(){
   renderBoard();
 }
 
-/* P2P 連線模組 */
+/* P2P 穩定連線模組 (附 STUN ICE 與握手心跳) */
 let peer = null;
 const clients = new Set();
 let shareURL = '';
@@ -503,7 +554,7 @@ let shareURL = '';
 function initP2P(){
   if (typeof Peer === 'undefined' || isViewerOnly) return;
   try {
-    peer = new Peer();
+    peer = new Peer(PEER_CONFIG);
     peer.on('open', id => {
       $('online-status-badge').textContent = '● 已聯網 · 可掃碼';
       $('online-status-badge').style.color = '#30d158';
@@ -515,8 +566,11 @@ function initP2P(){
     });
     peer.on('connection', conn => {
       clients.add(conn);
-      conn.on('open', () => conn.send({ type: 'STATE', state }));
+      conn.on('open', () => {
+        conn.send({ type: 'STATE', state });
+      });
       conn.on('close', () => clients.delete(conn));
+      conn.on('error', () => clients.delete(conn));
     });
     peer.on('error', () => {
       $('online-status-badge').textContent = '● 本機模式';
@@ -551,32 +605,57 @@ function openRoomQR(){
   $('room-qr').showModal();
 }
 
+/* 手機睇分端邏輯 (iPhone 掃碼自動進入，附自動重試) */
 function startViewerMode(){
-  $('online-status-badge').textContent = '● 睇分同步中…';
+  $('online-status-badge').textContent = '● 正在同步 iPad…';
+  $('online-status-badge').style.color = '#ff9f0a';
   $('btn-qr-share').classList.add('hidden');
+  $('btn-zero-scores').classList.add('hidden');
+  $('btn-settings-opt').classList.add('hidden');
   $('fab-score').classList.add('hidden');
   $('btn-recent-undo')?.classList.add('hidden');
-  $('room-toolbar').querySelectorAll('button').forEach(b => {
-    if (b.textContent.includes('歸零') || b.textContent.includes('設定')) b.classList.add('hidden');
-  });
+
+  showBoardView();
 
   if (typeof Peer === 'undefined') {
     alert('無法載入連線套件，請檢查手機網絡');
     return;
   }
-  const viewerPeer = new Peer();
-  viewerPeer.on('open', () => {
+
+  let viewerPeer = new Peer(PEER_CONFIG);
+  let retryTimer = null;
+
+  function connectToHost(){
     const conn = viewerPeer.connect(joinPeerId, { reliable: true });
-    conn.on('open', () => $('online-status-badge').textContent = '● 已同步 iPad 分數');
+    conn.on('open', () => {
+      if (retryTimer) clearInterval(retryTimer);
+      $('online-status-badge').textContent = '● 已同步 iPad';
+      $('online-status-badge').style.color = '#30d158';
+    });
     conn.on('data', data => {
       if (data.type === 'STATE') {
         state = data.state;
         renderBoard();
       }
     });
-    conn.on('close', () => $('online-status-badge').textContent = '● 連線中斷');
+    conn.on('close', () => {
+      $('online-status-badge').textContent = '● 重連中…';
+      $('online-status-badge').style.color = '#ff9f0a';
+    });
+    conn.on('error', () => {
+      $('online-status-badge').textContent = '● 連線中斷，重試中…';
+      $('online-status-badge').style.color = '#ff453a';
+    });
+  }
+
+  viewerPeer.on('open', () => {
+    connectToHost();
+    retryTimer = setInterval(() => {
+      if ($('online-status-badge').textContent.includes('重連') || $('online-status-badge').textContent.includes('同步')) {
+        connectToHost();
+      }
+    }, 6000);
   });
-  showBoardView();
 }
 
 function getStorageKey(slot){
@@ -770,14 +849,8 @@ function renderBoard(){
   $('board-mode-tag').textContent = '跑馬仔 · ' + (state.isRake ? '抽水版' : '不抽水版');
   $('board-round-badge').textContent = computeCurrentRound();
 
-  // 執位資訊顯示 (例如：執位: 2小時 或 執位: 75分鐘 或 執位: 關閉)
-  const interval = state.seatReminderInterval || 0;
-  let seatText = '執位: 關閉';
-  if (interval === 120) seatText = '執位: 2小時';
-  else if (interval > 0) seatText = `執位: ${interval}分鐘`;
-  $('board-seat-info').textContent = seatText;
+  renderSeatCountdown();
 
-  // 牌局開始時間顯示
   if (state.startedAt) {
     const t = new Date(state.startedAt).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
     $('board-start-time').textContent = '開始: ' + t;
@@ -1045,7 +1118,6 @@ function exportHistory(){
 
 function openOptions(){
   if (isViewerOnly) return;
-  // 設定選單對應狀態
   const interval = state.seatReminderInterval;
   if (interval === 120) {
     $('seat-timer-select').value = '120';
