@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Offline 跑馬仔電子計分板 (完全離線版)</title>
+  <title>跑馬仔電子計分板 (iPad 離線大鍵版)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #121212; color: #f5f5f7; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
     .hidden { display: none !important; }
 
     /* 設定開局介面 */
-    #setup-view { margin: 24px auto; background: #1c1c1e; padding: 24px; border-radius: 16px; width: calc(100% - 24px); max-width: 480px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
-    .setup-title { text-align: center; margin-bottom: 20px; font-size: 24px; font-weight: bold; }
+    #setup-view { margin: 24px auto; background: #1c1c1e; padding: 24px; border-radius: 16px; width: calc(100% - 24px); max-width: 520px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    .setup-title { text-align: center; margin-bottom: 20px; font-size: 26px; font-weight: bold; }
     .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; font-size: 15px; color: #8e8e93; margin-bottom: 8px; }
-    .name-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .name-inputs input { width: 100%; min-width: 0; max-width: 100%; min-height: 50px; background: #2c2c2e; border: 1px solid #3a3a3c; color: #fff; padding: 12px; border-radius: 8px; font-size: 17px; outline: none; }
+    .form-group label { display: block; font-size: 16px; color: #8e8e93; margin-bottom: 8px; }
+    .name-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .name-inputs input { width: 100%; min-width: 0; max-width: 100%; min-height: 52px; background: #2c2c2e; border: 1px solid #3a3a3c; color: #fff; padding: 12px; border-radius: 10px; font-size: 18px; outline: none; }
     .name-inputs input:focus { border-color: #007aff; }
-    .mode-select { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .mode-btn { min-width: 0; width: 100%; min-height: 54px; line-height: 1.4; padding: 12px; background: #2c2c2e; border: 2px solid #3a3a3c; color: #fff; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+    .mode-select { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .mode-btn { min-width: 0; width: 100%; min-height: 58px; line-height: 1.4; padding: 12px; background: #2c2c2e; border: 2px solid #3a3a3c; color: #fff; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
     .mode-btn.active { border-color: #34c759; background: #1e3a24; color: #30d158; }
-    .btn-start { width: 100%; padding: 15px 10px; background: #34c759; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .btn-start { width: 100%; padding: 16px 10px; background: #34c759; color: #fff; border: none; border-radius: 14px; font-size: 20px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
     /* iPad 看板主畫面 (滿版不縮放) */
     #ipad-view {
@@ -28,7 +28,7 @@
       height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: calc(54px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+      padding: calc(56px + env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
       box-sizing: border-box;
       overflow: hidden;
     }
@@ -37,47 +37,47 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 14px;
+      padding: 10px 16px;
       background: #1c1c1e;
-      border-radius: 12px;
-      margin-bottom: 8px;
+      border-radius: 14px;
+      margin-bottom: 10px;
       flex-shrink: 0;
     }
-    .board-header-left { display: flex; align-items: center; gap: 10px; }
-    .board-round-badge { background: #ffd60a; color: #000; font-weight: 800; font-size: 15px; padding: 3px 9px; border-radius: 6px; }
-    .board-header h2 { font-size: 17px; color: #fff; font-weight: 600; }
-    .board-header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #8e8e93; }
+    .board-header-left { display: flex; align-items: center; gap: 12px; }
+    .board-round-badge { background: #ffd60a; color: #000; font-weight: 800; font-size: 16px; padding: 4px 10px; border-radius: 6px; }
+    .board-header h2 { font-size: 18px; color: #fff; font-weight: 600; }
+    .board-header-right { display: flex; align-items: center; gap: 14px; font-size: 14px; color: #8e8e93; }
 
     /* 上一手紀錄字卡橫條 */
     #board-recent-bar {
       background: #241d08;
-      border: 1px solid rgba(255, 214, 10, 0.35);
-      border-radius: 10px;
-      padding: 6px 14px;
-      margin-bottom: 8px;
-      font-size: 13px;
+      border: 1.5px solid rgba(255, 214, 10, 0.4);
+      border-radius: 12px;
+      padding: 8px 16px;
+      margin-bottom: 10px;
+      font-size: 14px;
       color: #ffd60a;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
     }
-    #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 12px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; }
+    #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 13px; padding: 2px 8px; border-radius: 4px; margin-right: 8px; }
 
     /* 四位玩家卡片容器 */
     .grid-container {
       display: grid;
-      gap: 12px;
+      gap: 14px;
       flex: 1;
       min-height: 0;
       width: 100%;
     }
     .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-    .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(50px, 9dvh, 76px); }
+    .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(54px, 10dvh, 84px); }
 
     .player-card {
       background: #1c1c1e;
-      border-radius: 16px;
+      border-radius: 18px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -92,80 +92,166 @@
       transform: scale(0.985);
       border-color: #ffd60a;
     }
-    .player-name { font-size: clamp(20px, 3.2vw, 32px); color: #98989d; margin-bottom: 4px; font-weight: 600; }
-    .player-score { font-size: clamp(44px, 8vw, 84px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .player-name { font-size: clamp(22px, 3.4vw, 34px); color: #98989d; margin-bottom: 4px; font-weight: 600; }
+    .player-score { font-size: clamp(48px, 8.5vw, 90px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
     .score-neg { color: #ff453a; }
     .score-zero { color: #8e8e93; }
 
     /* 抽水箱卡片 */
-    .pot-card { grid-column: 1 / span 2; background: #241d08; border: 2px solid #ffd60a; flex-direction: row; justify-content: space-around; padding: 6px 20px; border-radius: 14px; align-items: center; cursor: default; }
-    .pot-title { font-size: clamp(17px, 2.8vw, 26px); color: #ffd60a; font-weight: bold; }
-    .pot-amount { font-size: clamp(28px, 5.2vw, 50px); font-weight: 800; color: #ffd60a; }
+    .pot-card { grid-column: 1 / span 2; background: #241d08; border: 2px solid #ffd60a; flex-direction: row; justify-content: space-around; padding: 8px 24px; border-radius: 16px; align-items: center; cursor: default; }
+    .pot-title { font-size: clamp(18px, 2.8vw, 26px); color: #ffd60a; font-weight: bold; }
+    .pot-amount { font-size: clamp(30px, 5.2vw, 54px); font-weight: 800; color: #ffd60a; }
 
     /* 右下角浮動「計分入帳」大按鈕 */
     #fab-score {
       position: fixed;
-      right: max(16px, env(safe-area-inset-right));
-      bottom: max(16px, env(safe-area-inset-bottom));
+      right: max(20px, env(safe-area-inset-right));
+      bottom: max(20px, env(safe-area-inset-bottom));
       z-index: 100;
       background: #34c759;
       color: #fff;
       border: 0;
-      border-radius: 30px;
-      padding: 14px 24px;
-      font-size: 19px;
+      border-radius: 32px;
+      padding: 16px 28px;
+      font-size: 21px;
       font-weight: bold;
-      box-shadow: 0 4px 20px rgba(52, 199, 89, 0.45);
+      box-shadow: 0 4px 24px rgba(52, 199, 89, 0.45);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     /* 頂部導航列 */
-    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 6px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 8px 6px; background: #121212; }
-    #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 40px; border: 0; border-radius: 8px; background: #2c2c2e; color: white; font-size: 13.5px; padding: 4px; font-weight: 600; cursor: pointer; }
+    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 8px; justify-content: center; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: #121212; }
+    #room-toolbar button { flex: 1; max-width: 150px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 14.5px; padding: 6px; font-weight: 600; cursor: pointer; }
 
-    /* 彈窗樣式 */
-    dialog { margin: auto; background: #1c1c1e; color: white; border: 1px solid #555; border-radius: 18px; padding: 22px; width: min(94vw, 760px); max-height: 90dvh; overflow: auto; }
-    dialog::backdrop { background: rgba(0, 0, 0, 0.75); }
+    /* 通用彈窗樣式 */
+    dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.82); }
 
-    /* 計分輸入控制選單 (彈窗式) */
-    #score-modal { width: min(94vw, 540px); padding: 18px; }
-    #wizard-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    #wizard-nav .opt-btn { min-height: 42px; padding: 6px 14px; font-size: 16px; border-radius: 8px; }
-    #wizard-player { font-size: 19px; font-weight: bold; color: #ffd60a; }
-    #wizard-title { font-size: 22px; margin: 8px 0 14px; text-align: center; }
-    #wizard-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    /* =========================================
+       iPad 專屬：超大按鍵計分輸入彈窗
+       ========================================= */
+    #score-modal {
+      width: min(94vw, 880px); /* 闊度大幅拉闊至 880px，充分利用橫芒空間 */
+      padding: 24px;
+      border: 2px solid #555;
+      border-radius: 22px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+    }
+    #wizard-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #333;
+    }
+    #wizard-nav .nav-btn {
+      min-height: 52px;
+      padding: 10px 22px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 12px;
+      background: #2c2c2e;
+      color: #fff;
+      border: 1px solid #444;
+      cursor: pointer;
+    }
+    #wizard-player {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffd60a;
+      letter-spacing: 1px;
+    }
+    #wizard-title {
+      font-size: 24px;
+      margin: 10px 0 18px;
+      text-align: center;
+      color: #e5e5ea;
+      font-weight: 700;
+    }
+    #wizard-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
     
-    .opt-btn { background: #2c2c2e; color: #fff; border: 2px solid transparent; padding: 14px 6px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; text-align: center; overflow-wrap: anywhere; }
-    .opt-btn:active { background: #3a3a3c; }
-    .wizard-score { font-size: 26px; display: block; margin-top: 4px; }
-    .submit-btn { width: 100%; padding: 14px; background: #34c759; color: #fff; font-size: 19px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; }
-    .btn-undo { background: #3a2e18; border: 1px solid #ff9f0a; color: #ff9f0a; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
+    /* 大按鍵樣式 */
+    .opt-btn {
+      background: #2c2c2e;
+      color: #fff;
+      border: 2px solid transparent;
+      min-height: 84px; /* 高度大幅提升至 84px */
+      padding: 16px 10px;
+      border-radius: 16px;
+      font-size: 25px; /* 字體加大至 25px */
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, transform 0.08s;
+    }
+    .opt-btn:active {
+      background: #3a3a3c;
+      transform: scale(0.98);
+      border-color: #ffd60a;
+    }
+
+    /* 「自摸」特大招牌按鍵 */
+    .opt-btn-win {
+      grid-column: span 2;
+      min-height: 96px;
+      font-size: 32px;
+      background: #1e3a24;
+      color: #30d158;
+      border: 2px solid #34c759;
+      box-shadow: 0 4px 16px rgba(52, 199, 89, 0.2);
+    }
+    .opt-btn-win:active {
+      background: #285430;
+      border-color: #30d158;
+    }
+
+    /* 選馬特大按鍵 (0至5隻) */
+    .horse-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 14px !important;
+    }
+    .horse-btn {
+      min-height: 100px;
+      font-size: 30px;
+    }
+
+    .submit-btn { width: 100%; padding: 18px; background: #34c759; color: #fff; font-size: 22px; font-weight: bold; border: none; border-radius: 14px; cursor: pointer; margin-top: 12px; }
+    .btn-undo { background: #3a2e18; border: 1.5px solid #ff9f0a; color: #ff9f0a; padding: 8px 16px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
 
     /* 統計彈窗專用 */
-    .stats-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-    .stats-badge-card { background: #2c2c2e; border: 1.5px solid #444; border-radius: 12px; padding: 12px; text-align: center; }
-    .stats-badge-title { font-size: 13px; color: #ffd60a; font-weight: bold; margin-bottom: 4px; }
-    .stats-badge-val { font-size: 18px; font-weight: 800; color: #fff; }
-    .stats-table-wrap { overflow-x: auto; margin-top: 10px; }
-    .stats-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 15px; }
-    .stats-table th, .stats-table td { padding: 10px 6px; border-bottom: 1px solid #3a3a3c; white-space: nowrap; }
-    .stats-table th { background: #2c2c2e; color: #8e8e93; }
+    .stats-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .stats-badge-card { background: #2c2c2e; border: 1.5px solid #444; border-radius: 14px; padding: 14px; text-align: center; }
+    .stats-badge-title { font-size: 14px; color: #ffd60a; font-weight: bold; margin-bottom: 6px; }
+    .stats-badge-val { font-size: 22px; font-weight: 800; color: #fff; }
+    .stats-table-wrap { overflow-x: auto; margin-top: 12px; }
+    .stats-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; }
+    .stats-table th, .stats-table td { padding: 12px 8px; border-bottom: 1px solid #3a3a3c; white-space: nowrap; }
+    .stats-table th { background: #2c2c2e; color: #8e8e93; font-weight: bold; }
     
-    .history-entry { font-size: 16px; line-height: 1.7; padding: 14px 0; border-bottom: 1px solid #444; }
-    .history-entry strong { font-size: 18px; color: #ffd60a; }
+    .history-entry { font-size: 17px; line-height: 1.8; padding: 16px 0; border-bottom: 1px solid #444; }
+    .history-entry strong { font-size: 19px; color: #ffd60a; }
   </style>
 </head>
 <body>
 
   <!-- 本機房間大堂 -->
-  <section id="room-lobby" class="hidden" style="width:calc(100% - 24px);max-width:520px;margin:24px auto">
+  <section id="room-lobby" class="hidden" style="width:calc(100% - 24px);max-width:540px;margin:24px auto">
     <h1>🀄 跑馬仔計分板 (離線版)</h1>
-    <p style="color:#aaa;margin:12px 0 16px;">資料完全保存在 iPad 本機，毋須任何網絡連線。</p>
-    <div id="local-room-list" style="display:grid;gap:12px;"></div>
+    <p style="color:#aaa;margin:12px 0 16px;font-size:16px;">資料完全保存在 iPad 本機，毋須任何網絡連線。</p>
+    <div id="local-room-list" style="display:grid;gap:14px;"></div>
   </section>
 
   <!-- 頂部工具列 -->
@@ -176,7 +262,7 @@
     <button onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
-  <!-- iPad 主看板 -->
+  <!-- iPad 主看板 (點擊任何玩家卡片或右下角大按鈕即可入帳) -->
   <div id="ipad-view" class="hidden">
     <div class="board-header">
       <div class="board-header-left">
@@ -185,7 +271,7 @@
       </div>
       <div class="board-header-right">
         <span id="board-created-time">建立: --:--</span>
-        <span style="color:#30d158;">● 本機離線模式</span>
+        <span style="color:#30d158;font-weight:bold;">● 本機離線模式</span>
       </div>
     </div>
 
@@ -195,7 +281,7 @@
         <span class="tag">上一手</span>
         <span id="board-recent-text">--</span>
       </div>
-      <button type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷</button>
+      <button type="button" class="btn-undo" onclick="undoLastAction()">↩ 撤銷上一手</button>
     </div>
 
     <div id="board-grid" class="grid-container grid-4">
@@ -214,17 +300,17 @@
   <!-- 浮動計分按鈕 -->
   <button id="fab-score" class="hidden" onclick="openScoreModal()">＋ 記一手</button>
 
-  <!-- 計分入帳控制彈窗 (Wizard) -->
+  <!-- 超大按鍵計分入帳控制彈窗 (Wizard) -->
   <dialog id="score-modal">
     <div id="wizard-nav">
-      <button class="opt-btn" onclick="wizardBack()">‹ 返回</button>
+      <button class="nav-btn" onclick="wizardBack()">‹ 返回</button>
       <span id="wizard-player"></span>
-      <button class="opt-btn" onclick="$('score-modal').close()">關閉</button>
+      <button class="nav-btn" onclick="$('score-modal').close()">關閉 ✕</button>
     </div>
     <h2 id="wizard-title"></h2>
     <div id="wizard-buttons"></div>
-    <p id="wizard-note" style="color:#aaa;font-size:14px;margin-top:12px;text-align:center;"></p>
-    <p id="feedback" style="color:#ff9f0a;text-align:center;margin-top:8px;"></p>
+    <p id="wizard-note" style="color:#aaa;font-size:16px;margin-top:16px;text-align:center;line-height:1.4;"></p>
+    <p id="feedback" style="color:#ff9f0a;text-align:center;margin-top:8px;font-size:16px;"></p>
     <input id="kong-win" type="checkbox" hidden>
   </dialog>
 
@@ -248,14 +334,14 @@
       </div>
     </div>
     <button type="button" class="btn-start" onclick="handleStart()">確定開局</button>
-    <button type="button" class="opt-btn" style="width:100%;margin-top:10px;" onclick="leaveToLobby()">返回大堂</button>
+    <button type="button" class="opt-btn" style="width:100%;margin-top:12px;min-height:56px;font-size:18px;" onclick="leaveToLobby()">返回大堂</button>
   </div>
 
   <!-- 統計彈窗 -->
   <dialog id="stats-menu">
     <h2>📊 牌局統計分析</h2>
     <div class="stats-card-grid" id="stats-top-badges"></div>
-    <h3 style="font-size:16px;margin:12px 0 6px;color:#8e8e93;">各家結算動作明細</h3>
+    <h3 style="font-size:18px;margin:14px 0 8px;color:#8e8e93;">各家結算動作明細</h3>
     <div class="stats-table-wrap">
       <table class="stats-table">
         <thead>
@@ -273,23 +359,23 @@
         <tbody id="stats-table-body"></tbody>
       </table>
     </div>
-    <button class="btn-start" style="margin-top:20px;" onclick="this.closest('dialog').close()">返回看板</button>
+    <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
   <!-- 歷史紀錄彈窗 -->
   <dialog id="history-menu">
     <h2>📋 操作紀錄</h2>
     <button class="btn-start" onclick="exportHistory()">匯出 CSV 紀錄</button>
-    <div id="history-list" style="margin-top:12px;"></div>
-    <button class="btn-start" style="margin-top:16px;" onclick="this.closest('dialog').close()">返回看板</button>
+    <div id="history-list" style="margin-top:14px;"></div>
+    <button class="btn-start" style="margin-top:18px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
   <!-- 設定與選項 -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
-    <button class="opt-btn" style="width:100%;margin-top:12px;" onclick="$('options-menu').close();leaveToLobby()">返回房間大堂</button>
-    <button class="opt-btn" style="width:100%;margin-top:10px;" onclick="$('options-menu').close();editSetup()">修改玩家名稱／玩法</button>
-    <button class="btn-start" style="margin-top:20px;" onclick="this.closest('dialog').close()">返回看板</button>
+    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();leaveToLobby()">返回房間大堂</button>
+    <button class="opt-btn" style="width:100%;margin-top:12px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();editSetup()">修改玩家名稱／玩法</button>
+    <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
 <script>
@@ -355,7 +441,7 @@ function showLocalLobby(){
   for (let i = 1; i <= 3; i++) {
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
-    btn.style.cssText = 'min-height:80px;text-align:left;padding:16px;';
+    btn.style.cssText = 'min-height:86px;text-align:left;padding:18px;font-size:20px;';
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(getStorageKey(i))); } catch(e){}
     btn.textContent = '房間 ' + i + ' · ' + (saved ? `繼續牌局（${saved.history?.length || 0} 筆紀錄）` : '建立新牌局');
@@ -511,7 +597,9 @@ function renderBoard(){
   });
 }
 
-/* 單機計分彈窗 (Wizard) */
+/* =========================================
+   單機 iPad 控制精靈 (超大按鍵排版)
+   ========================================= */
 function openScoreModal(){
   wizardHome();
   wizardGo('player');
@@ -554,13 +642,14 @@ function setAction(a){
 function renderWizard(){
   $('wizard-player').textContent = selectedPlayer === null ? '' : state.names[selectedPlayer] + (wizardStep === 'action' ? '' : ' · ' + ACTION_NAMES[currentAction]);
   $('wizard-buttons').replaceChildren();
+  $('wizard-buttons').className = '';
   $('wizard-note').textContent = '';
 
-  function btn(label, cb, fullWidth = false){
+  function btn(label, cb, className = ''){
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'opt-btn';
+    b.type = 'button';
+    b.className = 'opt-btn ' + className;
     b.textContent = label;
-    if (fullWidth) b.style.gridColumn = 'span 2';
     b.onclick = cb;
     $('wizard-buttons').append(b);
   }
@@ -570,7 +659,8 @@ function renderWizard(){
     state.names.forEach((n, i) => btn(n, () => { selectedPlayer = i; wizardGo('action'); }));
   } else if (wizardStep === 'action') {
     $('wizard-title').textContent = '揀結算動作';
-    btn('自摸', () => setAction('win'), true);
+    // 自摸使用特大顯眼按鍵 (橫跨兩欄、加大加高)
+    btn('自摸', () => setAction('win'), 'opt-btn-win');
     btn('明槓', () => setAction('ming'));
     btn('暗槓', () => setAction('an'));
     btn('補槓', () => setAction('bu'));
@@ -579,7 +669,7 @@ function renderWizard(){
     btn('特別糊牌', () => setAction('special_win'));
   } else if (wizardStep === 'chase_type') {
     $('wizard-title').textContent = '揀追牌種類';
-    btn('普通追牌 (每家收$10)', () => { currentAction = 'chase_normal'; commitAction(); });
+    btn('普通追牌 (每家收$10)', () => { currentAction = 'chase_normal'; commitAction(); }, 'opt-btn-win');
     btn('百搭追牌 (一位收$30)', () => { currentAction = 'chase_wild'; wizardGo('chase_winner'); });
   } else if (wizardStep === 'chase_winner') {
     $('wizard-title').textContent = '揀追牌收款者';
@@ -589,9 +679,9 @@ function renderWizard(){
   } else if (wizardStep === 'special_amount') {
     $('wizard-title').textContent = '輸入每家需付金額';
     const box = document.createElement('div');
-    box.style.cssText = 'grid-column:span 2;display:flex;flex-direction:column;gap:12px;';
+    box.style.cssText = 'grid-column:span 2;display:flex;flex-direction:column;gap:14px;';
     box.innerHTML = `
-      <input id="spec-amt" type="number" inputmode="numeric" placeholder="每家付出金額" style="width:100%;font-size:24px;padding:12px;border-radius:10px;text-align:center;background:#2c2c2e;color:#fff;border:1px solid #777;">
+      <input id="spec-amt" type="number" inputmode="numeric" placeholder="每家付出金額" style="width:100%;min-height:64px;font-size:28px;padding:12px;border-radius:12px;text-align:center;background:#2c2c2e;color:#fff;border:1.5px solid #777;">
       <button type="button" class="submit-btn">確認收取</button>
     `;
     box.querySelector('button').onclick = () => {
@@ -609,10 +699,14 @@ function renderWizard(){
   } else if (wizardStep === 'kong') {
     $('wizard-title').textContent = '有冇槓上自摸？';
     btn('冇，只計槓錢', () => { $('kong-win').checked = false; horseCount = 0; commitAction(); });
-    btn('有，再揀中馬隻數', () => { $('kong-win').checked = true; wizardGo('horse'); });
+    btn('有，再揀中馬隻數', () => { $('kong-win').checked = true; wizardGo('horse'); }, 'opt-btn-win');
   } else if (wizardStep === 'horse') {
     $('wizard-title').textContent = '揀中馬隻數';
-    for (let i = 0; i <= 5; i++) btn(i + ' 隻', () => { horseCount = i; commitAction(); });
+    $('wizard-buttons').className = 'horse-grid';
+    // 0 到 5 隻以 3x2 特大方格顯示
+    for (let i = 0; i <= 5; i++) {
+      btn(i + ' 隻', () => { horseCount = i; commitAction(); }, 'horse-btn');
+    }
   }
 }
 
@@ -650,7 +744,6 @@ function undoLastAction(){
   renderBoard();
 }
 
-/* 分數歸零，同時清空操作紀錄及重置開局時間 */
 function zeroScores(){
   if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？無法復原。')) return;
   state.scores = [0, 0, 0, 0];
@@ -722,7 +815,7 @@ function openHistory(){
     const item = document.createElement('article');
     item.className = 'history-entry';
     const tag = roundMap[e.id] ? `[${roundMap[e.id]}] ` : '';
-    item.innerHTML = `<strong>${tag}${logTitle(e)}</strong><div style="font-size:13px;color:#8e8e93;">${new Date(e.time).toLocaleTimeString('zh-HK')}</div>`;
+    item.innerHTML = `<strong>${tag}${logTitle(e)}</strong><div style="font-size:14px;color:#8e8e93;">${new Date(e.time).toLocaleTimeString('zh-HK')}</div>`;
     $('history-list').append(item);
   });
   $('history-menu').showModal();
