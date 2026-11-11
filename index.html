@@ -68,7 +68,7 @@
     }
     #board-recent-bar .tag { background: #ffd60a; color: #000; font-weight: bold; font-size: 12px; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
 
-    /* 四位玩家卡片容器 (自適應彈性高度) */
+    /* 四位玩家卡片容器 */
     .grid-container { display: grid; gap: 10px; flex: 1; min-height: 0; width: 100%; }
     .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
     .grid-5 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr clamp(48px, 9dvh, 76px); }
@@ -122,7 +122,7 @@
     #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 6px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 8px 6px; background: #121212; }
     #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 13.5px; padding: 4px; font-weight: 600; cursor: pointer; }
 
-    /* iPhone 專屬樣式微調 (寬度 <= 600px) */
+    /* iPhone 專屬樣式微調 */
     @media (max-width: 600px) {
       #ipad-view { padding-top: calc(50px + env(safe-area-inset-top)); padding-left: 8px; padding-right: 8px; }
       .board-header { padding: 6px 10px; }
@@ -142,7 +142,7 @@
     dialog { margin: auto; background: #1c1c1e; color: white; border: 1.5px solid #444; border-radius: 20px; padding: 24px; width: min(94vw, 840px); max-height: 90dvh; overflow: auto; }
     dialog::backdrop { background: rgba(0, 0, 0, 0.82); }
 
-    /* iPad 專屬：超大按鍵計分輸入彈窗 */
+    /* 超大按鍵計分輸入彈窗 */
     #score-modal {
       width: min(94vw, 880px);
       padding: 24px;
@@ -197,7 +197,6 @@
     }
     .opt-btn:active { background: #3a3a3c; transform: scale(0.98); border-color: #ffd60a; }
 
-    /* 「自摸」特大招牌鍵 */
     .opt-btn-win {
       grid-column: span 2;
       min-height: 96px;
@@ -209,23 +208,12 @@
     }
     .opt-btn-win:active { background: #285430; border-color: #30d158; }
 
-    /* 槓上自摸：無（綠色）*/
-    .opt-btn-kong-no {
-      background: #1e3a24;
-      color: #30d158;
-      border: 2px solid #34c759;
-    }
+    .opt-btn-kong-no { background: #1e3a24; color: #30d158; border: 2px solid #34c759; }
     .opt-btn-kong-no:active { background: #285430; }
 
-    /* 槓上自摸：有（紅色）*/
-    .opt-btn-kong-yes {
-      background: #3a1e1e;
-      color: #ff453a;
-      border: 2px solid #ff453a;
-    }
+    .opt-btn-kong-yes { background: #3a1e1e; color: #ff453a; border: 2px solid #ff453a; }
     .opt-btn-kong-yes:active { background: #542828; }
 
-    /* 選馬 0-5 隻 (3x2 大方塊) */
     .horse-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 14px !important; }
     .horse-btn { min-height: 100px; font-size: 30px; }
 
@@ -247,8 +235,13 @@
     .stats-table th, .stats-table td { padding: 12px 8px; border-bottom: 1px solid #3a3a3c; white-space: nowrap; }
     .stats-table th { background: #2c2c2e; color: #8e8e93; font-weight: bold; }
     
-    .history-entry { font-size: 17px; line-height: 1.8; padding: 16px 0; border-bottom: 1px solid #444; }
-    .history-entry strong { font-size: 19px; color: #ffd60a; }
+    /* 歷史紀錄細節條目樣式 */
+    .history-entry { padding: 14px 4px; border-bottom: 1px solid #333; }
+    .history-entry strong { font-size: 18px; color: #ffd60a; }
+    .history-detail { font-size: 15px; color: #e5e5ea; margin-top: 5px; line-height: 1.4; }
+    .history-changes { font-size: 13.5px; color: #98989d; margin-top: 4px; }
+    .history-entry .pos { color: #30d158; font-weight: 600; }
+    .history-entry .neg { color: #ff453a; font-weight: 600; }
 
     /* 執位提醒彈窗樣式 */
     #seat-alert-modal { text-align: center; border: 2.5px solid #ffd60a; box-shadow: 0 0 35px rgba(255, 214, 10, 0.4); max-width: 500px; }
@@ -274,7 +267,7 @@
     <button id="btn-settings-opt" onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
-  <!-- 看板主畫面 (iPad 橫芒 / iPhone 睇分端) -->
+  <!-- 看板主畫面 -->
   <div id="ipad-view" class="hidden">
     <div class="board-header">
       <div class="board-header-left">
@@ -282,8 +275,8 @@
         <h2 id="board-mode-tag">跑馬仔 · 抽水版</h2>
       </div>
       <div class="board-header-right">
-        <!-- 動態執位倒數計時器 -->
-        <span id="board-seat-countdown" style="color:#ffd60a;font-weight:700;">執位倒數: --:--:--</span>
+        <!-- 動態執位倒數計時器 (可點擊暫停/恢復) -->
+        <span id="board-seat-countdown" onclick="toggleSeatTimerPause()" style="color:#ffd60a;font-weight:700;cursor:pointer;text-decoration:underline;">執位倒數: --:--:--</span>
         <span>·</span>
         <span id="board-start-time">開始: --:--</span>
         <span id="online-status-badge" style="color:#30d158;font-weight:bold;">● 本機模式</span>
@@ -312,7 +305,7 @@
     </div>
   </div>
 
-  <!-- 浮動計分按鈕 (iPhone 睇分端會自動隱藏) -->
+  <!-- 浮動計分按鈕 -->
   <button id="fab-score" class="hidden" onclick="openScoreModal()">＋ 記一手</button>
 
   <!-- 執位強烈提示彈窗 -->
@@ -321,7 +314,8 @@
     <p id="seat-alert-msg">牌局已進行滿 2 小時，請各位雀友起身抽位換位！</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn-start" onclick="dismissSeatAlert(true)">✅ 確認已執位（重新計時）</button>
-      <button class="opt-btn" style="min-height:56px;font-size:18px;" onclick="dismissSeatAlert(false)">⏳ 稍後 15 分鐘再提醒</button>
+      <!-- 修改2：稍後提醒改為 2 分鐘 -->
+      <button class="opt-btn" style="min-height:56px;font-size:18px;" onclick="dismissSeatAlert(false)">⏳ 稍後 2 分鐘再提醒</button>
     </div>
   </dialog>
 
@@ -396,15 +390,18 @@
     <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 歷史紀錄彈窗 -->
+  <!-- 歷史紀錄彈窗 (修改1：頂部加入返回按鈕) -->
   <dialog id="history-menu">
-    <h2>📋 操作紀錄</h2>
-    <button class="btn-start" onclick="exportHistory()">匯出 CSV 紀錄</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">📋 操作紀錄</h2>
+      <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('history-menu').close()">‹ 返回看板</button>
+    </div>
+    <button class="btn-start" style="margin-top:0;" onclick="exportHistory()">匯出 CSV 紀錄</button>
     <div id="history-list" style="margin-top:14px;"></div>
     <button class="btn-start" style="margin-top:18px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 設定與選項 (3個選項：每2小時預設、不提示、自訂分鐘) -->
+  <!-- 設定與選項 -->
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
@@ -434,7 +431,6 @@ let currentSlot = 1;
 const joinPeerId = new URLSearchParams(location.search).get('join');
 const isViewerOnly = !!joinPeerId;
 
-// 增加公共 STUN 伺服器，解決不同 WiFi / 5G NAT 穿透連線問題
 const PEER_CONFIG = {
   config: {
     iceServers: [
@@ -455,7 +451,9 @@ let state = {
   pot: 0,
   history: [],
   seatReminderInterval: 120, // 預設 120 分鐘
-  nextSeatAlertAt: Date.now() + 120 * 60 * 1000
+  nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
+  isTimerPaused: false,      // 是否暫停執位計時
+  pausedRemainingMs: 0       // 暫停時保存剩餘毫秒數
 };
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
@@ -488,13 +486,14 @@ function playDingDong(){
 setInterval(() => {
   renderSeatCountdown();
 
-  if (isViewerOnly || !state.seatReminderInterval || state.seatReminderInterval <= 0) return;
+  if (isViewerOnly || !state.seatReminderInterval || state.seatReminderInterval <= 0 || state.isTimerPaused) return;
   if (Date.now() >= state.nextSeatAlertAt) {
     playDingDong();
     const label = state.seatReminderInterval === 120 ? '2 小時' : `${state.seatReminderInterval} 分鐘`;
     $('seat-alert-msg').textContent = `牌局已進行滿 ${label}，請各位雀友起身抽位換位！`;
     $('seat-alert-modal').showModal();
-    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
+    // 修改2：到期後若無處理，預設 2 分鐘後再次提醒
+    state.nextSeatAlertAt = Date.now() + 2 * 60 * 1000;
     persist();
   }
 }, 1000);
@@ -502,6 +501,10 @@ setInterval(() => {
 function renderSeatCountdown(){
   if (!state.seatReminderInterval || state.seatReminderInterval <= 0) {
     $('board-seat-countdown').textContent = '執位: 關閉';
+    return;
+  }
+  if (state.isTimerPaused) {
+    $('board-seat-countdown').textContent = '⏸️ 執位已暫停 (點擊繼續)';
     return;
   }
   const remainingMs = Math.max(0, state.nextSeatAlertAt - Date.now());
@@ -518,13 +521,41 @@ function renderSeatCountdown(){
   }
 }
 
+/* 修改3：點擊執位倒數跳出暫停／繼續詢問視窗 */
+function toggleSeatTimerPause(){
+  if (isViewerOnly) return;
+  if (!state.seatReminderInterval || state.seatReminderInterval <= 0) {
+    alert('目前未開啟執位提醒。');
+    return;
+  }
+
+  if (state.isTimerPaused) {
+    if (confirm('執位計時目前已暫停。是否現在恢復繼續倒數？')) {
+      state.isTimerPaused = false;
+      state.nextSeatAlertAt = Date.now() + (state.pausedRemainingMs || 60000);
+      state.pausedRemainingMs = 0;
+      persist();
+      renderSeatCountdown();
+    }
+  } else {
+    if (confirm('是否要暫停執位計時？（例如中場休息／食飯時暫停）')) {
+      state.isTimerPaused = true;
+      state.pausedRemainingMs = Math.max(0, state.nextSeatAlertAt - Date.now());
+      persist();
+      renderSeatCountdown();
+    }
+  }
+}
+
+/* 修改2：稍後提醒設定為 2 分鐘 */
 function dismissSeatAlert(resetTimer){
   $('seat-alert-modal').close();
   if (resetTimer) {
     state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
   } else {
-    state.nextSeatAlertAt = Date.now() + 15 * 60 * 1000;
+    state.nextSeatAlertAt = Date.now() + 2 * 60 * 1000; // 稍後 2 分鐘再提醒
   }
+  state.isTimerPaused = false;
   persist();
   renderSeatCountdown();
 }
@@ -539,6 +570,7 @@ function updateSeatTimerConfig(){
     $('seat-timer-custom-wrap').classList.add('hidden');
     state.seatReminderInterval = parseInt(sel, 10);
   }
+  state.isTimerPaused = false;
   if (state.seatReminderInterval > 0) {
     state.nextSeatAlertAt = Date.now() + state.seatReminderInterval * 60 * 1000;
   }
@@ -546,7 +578,7 @@ function updateSeatTimerConfig(){
   renderBoard();
 }
 
-/* P2P 穩定連線模組 (附 STUN ICE 與握手心跳) */
+/* P2P 穩定連線模組 */
 let peer = null;
 const clients = new Set();
 let shareURL = '';
@@ -605,7 +637,7 @@ function openRoomQR(){
   $('room-qr').showModal();
 }
 
-/* 手機睇分端邏輯 (iPhone 掃碼自動進入，附自動重試) */
+/* 手機睇分端邏輯 */
 function startViewerMode(){
   $('online-status-badge').textContent = '● 正在同步 iPad…';
   $('online-status-badge').style.color = '#ff9f0a';
@@ -688,7 +720,8 @@ function selectRoom(slot){
   state = {
     version: 2, revision: 0, startedAt: new Date().toISOString(), isRake: true,
     names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [],
-    seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000
+    seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
+    isTimerPaused: false, pausedRemainingMs: 0
   };
   $('setup-title').textContent = '🀄️ 設定牌局（房間 ' + currentSlot + '）';
   state.names.forEach((n, i) => $('p-name-' + i).value = n);
@@ -1022,7 +1055,7 @@ function undoLastAction(){
   renderBoard();
 }
 
-/* 分數歸零：保留名字規則，清空分數/紀錄/水箱，開始時間重設為現在 */
+/* 分數歸零 */
 function zeroScores(){
   if (isViewerOnly) return;
   if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？開始時間亦會重設。')) return;
@@ -1032,12 +1065,54 @@ function zeroScores(){
   state.revision = 0;
   state.startedAt = new Date().toISOString();
   state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
+  state.isTimerPaused = false;
   persist();
   renderBoard();
 }
 
 function logTitle(e){
   return ACTION_NAMES[e.action] + (e.kongWin ? '＋槓上自摸' : '');
+}
+
+/* 修改1：操作紀錄產生詳細描述 */
+function getActionDetailText(e){
+  const names = e.before.names;
+  const actor = names[e.player];
+  let act = '';
+
+  if (e.action === 'win') {
+    act = `${actor} 自摸（中 ${e.horses || 0} 隻馬）`;
+  } else if (e.action === 'ming') {
+    const from = names[e.payer];
+    act = `${actor} 明槓 ${from}${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬，${from} 包自摸）` : ''}`;
+  } else if (e.action === 'an') {
+    act = `${actor} 暗槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
+  } else if (e.action === 'bu') {
+    act = `${actor} 補槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
+  } else if (e.action === 'rob') {
+    act = `${actor} 搶 ${names[e.payer]} 槓（中 ${e.horses || 0} 隻馬）`;
+  } else if (e.action === 'chase_normal') {
+    act = `${actor} 被追牌（普通追牌，每家收 $10）`;
+  } else if (e.action === 'chase_wild') {
+    act = `${actor} 被追牌（百搭追牌，由 ${names[e.payer]} 收 $30）`;
+  } else if (e.action === 'special_win') {
+    act = `${actor} 特別糊牌（每家付出 $${e.amount}）`;
+  } else {
+    act = logTitle(e);
+  }
+
+  // 結算分數明細
+  const diffs = names.map((n, i) => {
+    const diff = e.after.scores[i] - e.before.scores[i];
+    if (diff > 0) return `${n} <span class="pos">+$${diff}</span>`;
+    if (diff < 0) return `${n} <span class="neg">-$${Math.abs(diff)}</span>`;
+    return null;
+  }).filter(Boolean);
+
+  const potDiff = e.after.pot - e.before.pot;
+  if (potDiff > 0) diffs.push(`水箱 <span class="pos">+$${potDiff}</span>`);
+
+  return { act, diffText: diffs.join('， ') };
 }
 
 function openStats(){
@@ -1088,6 +1163,7 @@ function openStats(){
   $('stats-menu').showModal();
 }
 
+/* 修改1：操作紀錄詳細顯示 */
 function openHistory(){
   const roundMap = getRoundsMap(state.history);
   $('history-list').replaceChildren();
@@ -1096,7 +1172,15 @@ function openHistory(){
     const item = document.createElement('article');
     item.className = 'history-entry';
     const tag = roundMap[e.id] ? `[${roundMap[e.id]}] ` : '';
-    item.innerHTML = `<strong>${tag}${logTitle(e)}</strong><div style="font-size:14px;color:#8e8e93;">${new Date(e.time).toLocaleTimeString('zh-HK')}</div>`;
+    const details = getActionDetailText(e);
+    item.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>${tag}${logTitle(e)}</strong>
+        <span style="font-size:13px;color:#8e8e93;">${new Date(e.time).toLocaleTimeString('zh-HK')}</span>
+      </div>
+      <div class="history-detail">${details.act}</div>
+      <div class="history-changes">${details.diffText}</div>
+    `;
     $('history-list').append(item);
   });
   $('history-menu').showModal();
