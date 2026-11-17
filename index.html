@@ -85,9 +85,12 @@
       padding: 6px;
       cursor: pointer;
       transition: transform 0.08s, border-color 0.08s;
+      position: relative;
     }
     .player-card:active { transform: scale(0.985); border-color: #ffd60a; }
-    .player-name { font-size: clamp(18px, 3.2vw, 32px); color: #98989d; margin-bottom: 2px; font-weight: 600; }
+    .player-card.sub-active { border-color: rgba(255, 214, 10, 0.65); background: #222018; }
+    .player-name { font-size: clamp(18px, 3.2vw, 32px); color: #98989d; margin-bottom: 2px; font-weight: 600; text-align: center; }
+    .sub-badge { display: inline-block; background: #ffd60a; color: #000; font-size: clamp(12px, 1.8vw, 15px); font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-bottom: 4px; }
     .player-score { font-size: clamp(40px, 8vw, 84px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
     .score-neg { color: #ff453a; }
@@ -247,6 +250,17 @@
     #seat-alert-modal { text-align: center; border: 2.5px solid #ffd60a; box-shadow: 0 0 35px rgba(255, 214, 10, 0.4); max-width: 500px; }
     #seat-alert-modal h2 { font-size: 30px; color: #ffd60a; margin-bottom: 12px; }
     #seat-alert-modal p { font-size: 18px; color: #e5e5ea; line-height: 1.5; margin-bottom: 24px; }
+
+    /* 換人代打彈窗列表 */
+    .sub-slot-row { background: #2c2c2e; border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1.5px solid #444; }
+    .sub-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .sub-slot-title { font-size: 18px; font-weight: bold; color: #fff; }
+    .sub-slot-status { font-size: 14px; font-weight: bold; padding: 3px 8px; border-radius: 6px; }
+    .status-normal { background: #3a3a3c; color: #aaa; }
+    .status-sub { background: #ffd60a; color: #000; }
+    .sub-input-group { display: flex; gap: 8px; }
+    .sub-input-group input { flex: 1; min-height: 46px; background: #1c1c1e; border: 1.5px solid #666; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 17px; }
+    .sub-input-group button { min-height: 46px; padding: 0 16px; border: 0; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -293,10 +307,26 @@
     </div>
 
     <div id="board-grid" class="grid-container grid-4">
-      <div class="player-card" onclick="startActionFor(0)"><div class="player-name" id="disp-name-0">東家</div><div id="score-0" class="player-score score-zero">0</div></div>
-      <div class="player-card" onclick="startActionFor(1)"><div class="player-name" id="disp-name-1">南家</div><div id="score-1" class="player-score score-zero">0</div></div>
-      <div class="player-card" onclick="startActionFor(2)"><div class="player-name" id="disp-name-2">西家</div><div id="score-2" class="player-score score-zero">0</div></div>
-      <div class="player-card" onclick="startActionFor(3)"><div class="player-name" id="disp-name-3">北家</div><div id="score-3" class="player-score score-zero">0</div></div>
+      <div class="player-card" id="card-0" onclick="startActionFor(0)">
+        <div id="sub-badge-0" class="sub-badge hidden"></div>
+        <div class="player-name" id="disp-name-0">東家</div>
+        <div id="score-0" class="player-score score-zero">0</div>
+      </div>
+      <div class="player-card" id="card-1" onclick="startActionFor(1)">
+        <div id="sub-badge-1" class="sub-badge hidden"></div>
+        <div class="player-name" id="disp-name-1">南家</div>
+        <div id="score-1" class="player-score score-zero">0</div>
+      </div>
+      <div class="player-card" id="card-2" onclick="startActionFor(2)">
+        <div id="sub-badge-2" class="sub-badge hidden"></div>
+        <div class="player-name" id="disp-name-2">西家</div>
+        <div id="score-2" class="player-score score-zero">0</div>
+      </div>
+      <div class="player-card" id="card-3" onclick="startActionFor(3)">
+        <div id="sub-badge-3" class="sub-badge hidden"></div>
+        <div class="player-name" id="disp-name-3">北家</div>
+        <div id="score-3" class="player-score score-zero">0</div>
+      </div>
       
       <div id="pot-card" class="player-card pot-card hidden">
         <div class="pot-title">💰 抽水箱</div>
@@ -314,7 +344,6 @@
     <p id="seat-alert-msg">牌局已進行滿 2 小時，請各位雀友起身抽位換位！</p>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <button class="btn-start" onclick="dismissSeatAlert(true)">✅ 確認已執位（重新計時）</button>
-      <!-- 修改2：稍後提醒改為 2 分鐘 -->
       <button class="opt-btn" style="min-height:56px;font-size:18px;" onclick="dismissSeatAlert(false)">⏳ 稍後 2 分鐘再提醒</button>
     </div>
   </dialog>
@@ -342,6 +371,19 @@
     <input id="kong-win" type="checkbox" hidden>
   </dialog>
 
+  <!-- 換人／暫時代打設定彈窗 -->
+  <dialog id="sub-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">🔄 換人／暫時代打設定</h2>
+      <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('sub-modal').close()">✕ 關閉</button>
+    </div>
+    <p style="color:#aaa;font-size:15px;margin-bottom:16px;line-height:1.4;">
+      設定暫時代打後，該位置在代打期間的輸贏將獨立計算於代打者戰績（於「統計」中檢視）。原玩家歸位時請按結束代打。
+    </p>
+    <div id="sub-slots-list"></div>
+    <button class="btn-start" style="margin-top:14px;" onclick="$('sub-modal').close()">完成並返回看板</button>
+  </dialog>
+
   <!-- 開局設定介面 -->
   <div id="setup-view" class="hidden">
     <div class="setup-title" id="setup-title">🀄️ 設定牌局</div>
@@ -367,9 +409,33 @@
 
   <!-- 統計彈窗 -->
   <dialog id="stats-menu">
-    <h2>📊 牌局統計分析</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h2 style="margin:0;">📊 牌局統計分析</h2>
+      <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('stats-menu').close()">‹ 返回看板</button>
+    </div>
     <div class="stats-card-grid" id="stats-top-badges"></div>
-    <h3 style="font-size:18px;margin:14px 0 8px;color:#8e8e93;">各家結算動作明細</h3>
+
+    <!-- 新增：代打者獨立結算明細 -->
+    <div id="sub-stats-section" class="hidden">
+      <h3 style="font-size:18px;margin:18px 0 8px;color:#ffd60a;">🔄 換人／代打獨立結算</h3>
+      <div class="stats-table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>代打人</th>
+              <th>代打位置</th>
+              <th>代打期間淨輸贏</th>
+              <th>自摸</th>
+              <th>槓牌</th>
+              <th>中馬</th>
+            </tr>
+          </thead>
+          <tbody id="sub-stats-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3 style="font-size:18px;margin:18px 0 8px;color:#8e8e93;">四個座位總結算明細</h3>
     <div class="stats-table-wrap">
       <table class="stats-table">
         <thead>
@@ -390,7 +456,7 @@
     <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
-  <!-- 歷史紀錄彈窗 (修改1：頂部加入返回按鈕) -->
+  <!-- 歷史紀錄彈窗 -->
   <dialog id="history-menu">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <h2 style="margin:0;">📋 操作紀錄</h2>
@@ -405,6 +471,9 @@
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
+    <!-- 新增：換人／暫時代打管理入口 -->
+    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:68px;font-size:21px;background:#241d08;border:2px solid #ffd60a;color:#ffd60a;" onclick="$('options-menu').close();openSubModal()">🔄 換人／暫時代打管理</button>
+
     <div style="background:#2c2c2e;padding:16px;border-radius:14px;margin:16px 0;text-align:left;">
       <label style="font-size:17px;font-weight:bold;color:#ffd60a;display:block;margin-bottom:10px;">⏰ 定時執位提醒設定</label>
       <select id="seat-timer-select" onchange="updateSeatTimerConfig()" style="width:100%;min-height:50px;font-size:18px;background:#1c1c1e;color:#fff;border:1.5px solid #666;border-radius:10px;padding:8px 12px;">
@@ -442,23 +511,31 @@ const PEER_CONFIG = {
 
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 let state = {
-  version: 2,
+  version: 3,
   revision: 0,
   startedAt: new Date().toISOString(),
   isRake: true,
   names: ['東家','南家','西家','北家'],
+  substitutes: [null, null, null, null], // 紀錄各位置目前代打人名稱，null 代表原玩家
   scores: [0,0,0,0],
   pot: 0,
   history: [],
-  seatReminderInterval: 120, // 預設 120 分鐘
+  seatReminderInterval: 120,
   nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
-  isTimerPaused: false,      // 是否暫停執位計時
-  pausedRemainingMs: 0       // 暫停時保存剩餘毫秒數
+  isTimerPaused: false,
+  pausedRemainingMs: 0
 };
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
 const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
+
+/* 輔助取得某位置目前顯示名字（若有代打則顯示：代打人 (代 原玩家)） */
+function getDisplayName(idx, namesArr = state.names, subsArr = state.substitutes){
+  const orig = namesArr[idx] || ['東家','南家','西家','北家'][idx];
+  const sub = subsArr && subsArr[idx];
+  return sub ? `${sub} (代 ${orig})` : orig;
+}
 
 /* Web Audio 產生叮咚提示聲 */
 function playDingDong(){
@@ -492,7 +569,6 @@ setInterval(() => {
     const label = state.seatReminderInterval === 120 ? '2 小時' : `${state.seatReminderInterval} 分鐘`;
     $('seat-alert-msg').textContent = `牌局已進行滿 ${label}，請各位雀友起身抽位換位！`;
     $('seat-alert-modal').showModal();
-    // 修改2：到期後若無處理，預設 2 分鐘後再次提醒
     state.nextSeatAlertAt = Date.now() + 2 * 60 * 1000;
     persist();
   }
@@ -521,7 +597,6 @@ function renderSeatCountdown(){
   }
 }
 
-/* 修改3：點擊執位倒數跳出暫停／繼續詢問視窗 */
 function toggleSeatTimerPause(){
   if (isViewerOnly) return;
   if (!state.seatReminderInterval || state.seatReminderInterval <= 0) {
@@ -547,13 +622,12 @@ function toggleSeatTimerPause(){
   }
 }
 
-/* 修改2：稍後提醒設定為 2 分鐘 */
 function dismissSeatAlert(resetTimer){
   $('seat-alert-modal').close();
   if (resetTimer) {
     state.nextSeatAlertAt = Date.now() + (state.seatReminderInterval || 120) * 60 * 1000;
   } else {
-    state.nextSeatAlertAt = Date.now() + 2 * 60 * 1000; // 稍後 2 分鐘再提醒
+    state.nextSeatAlertAt = Date.now() + 2 * 60 * 1000;
   }
   state.isTimerPaused = false;
   persist();
@@ -575,6 +649,64 @@ function updateSeatTimerConfig(){
     state.nextSeatAlertAt = Date.now() + state.seatReminderInterval * 60 * 1000;
   }
   persist();
+  renderBoard();
+}
+
+/* 換人／暫時代打管理視窗 */
+function openSubModal(){
+  if (isViewerOnly) return;
+  renderSubSlots();
+  $('sub-modal').showModal();
+}
+
+function renderSubSlots(){
+  if (!state.substitutes) state.substitutes = [null, null, null, null];
+  const container = $('sub-slots-list');
+  container.replaceChildren();
+
+  state.names.forEach((origName, i) => {
+    const currentSub = state.substitutes[i];
+    const row = document.createElement('div');
+    row.className = 'sub-slot-row';
+    
+    const statusHtml = currentSub 
+      ? `<span class="sub-slot-status status-sub">代打中：${currentSub}</span>`
+      : `<span class="sub-slot-status status-normal">原玩家在席</span>`;
+
+    row.innerHTML = `
+      <div class="sub-slot-header">
+        <span class="sub-slot-title">座位 ${i+1}：${origName}</span>
+        ${statusHtml}
+      </div>
+      <div class="sub-input-group">
+        <input type="text" id="sub-input-${i}" placeholder="輸入代打人名稱 (如：阿強)" value="${currentSub || ''}">
+        <button type="button" style="background:#34c759;color:#fff;" onclick="setSubstitute(${i})">確認代打</button>
+        ${currentSub ? `<button type="button" style="background:#ff453a;color:#fff;" onclick="clearSubstitute(${i})">結束代打</button>` : ''}
+      </div>
+    `;
+    container.append(row);
+  });
+}
+
+function setSubstitute(idx){
+  const inputEl = $('sub-input-' + idx);
+  const subName = inputEl ? inputEl.value.trim() : '';
+  if (!subName) {
+    alert('請輸入代打人名稱！');
+    return;
+  }
+  if (!state.substitutes) state.substitutes = [null, null, null, null];
+  state.substitutes[idx] = subName;
+  persist();
+  renderSubSlots();
+  renderBoard();
+}
+
+function clearSubstitute(idx){
+  if (!state.substitutes) state.substitutes = [null, null, null, null];
+  state.substitutes[idx] = null;
+  persist();
+  renderSubSlots();
   renderBoard();
 }
 
@@ -710,6 +842,7 @@ function selectRoom(slot){
       const saved = JSON.parse(raw);
       if (saved && saved.names) {
         state = saved;
+        if (!state.substitutes) state.substitutes = [null, null, null, null];
         showBoardView();
         initP2P();
         return;
@@ -718,8 +851,10 @@ function selectRoom(slot){
   } catch(e){}
   
   state = {
-    version: 2, revision: 0, startedAt: new Date().toISOString(), isRake: true,
-    names: ['東家','南家','西家','北家'], scores: [0,0,0,0], pot: 0, history: [],
+    version: 3, revision: 0, startedAt: new Date().toISOString(), isRake: true,
+    names: ['東家','南家','西家','北家'],
+    substitutes: [null, null, null, null],
+    scores: [0,0,0,0], pot: 0, history: [],
     seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
     isTimerPaused: false, pausedRemainingMs: 0
   };
@@ -864,16 +999,20 @@ function getLatestActionSummary(){
   const lastLog = [...logs].reverse().find(l => l.kind === 'action');
   if (!lastLog) return null;
   const names = lastLog.before.names;
+  const subs = lastLog.before.substitutes || [null, null, null, null];
+  const actorDisp = getDisplayName(lastLog.player, names, subs);
+
   let desc = '';
-  if (lastLog.action === 'chase_normal') desc = '被追牌 ' + names[lastLog.player] + '（每家收$10）';
-  else if (lastLog.action === 'chase_wild') desc = '被追牌 ' + names[lastLog.player] + ' ➔ ' + names[lastLog.payer] + '（$30）';
-  else if (lastLog.action === 'special_win') desc = '特別糊牌 ' + names[lastLog.player] + '（每家收 $' + lastLog.amount + '）';
+  if (lastLog.action === 'chase_normal') desc = `被追牌 ${actorDisp}（每家收$10）`;
+  else if (lastLog.action === 'chase_wild') desc = `被追牌 ${actorDisp} ➔ ${getDisplayName(lastLog.payer, names, subs)}（$30）`;
+  else if (lastLog.action === 'special_win') desc = `特別糊牌 ${actorDisp}（每家收 $${lastLog.amount}）`;
   else {
     const changes = names.map((n, i) => {
       const d = lastLog.after.scores[i] - lastLog.before.scores[i];
-      return d !== 0 ? (n + ' ' + (d > 0 ? '+' : '') + '$' + d) : null;
+      const disp = subs[i] ? subs[i] : n;
+      return d !== 0 ? (disp + ' ' + (d > 0 ? '+' : '') + '$' + d) : null;
     }).filter(Boolean).join('，');
-    desc = logTitle(lastLog) + '（' + changes + '）';
+    desc = `${actorDisp} ${logTitle(lastLog)}（${changes}）`;
   }
   return desc;
 }
@@ -901,8 +1040,25 @@ function renderBoard(){
   $('pot-card').classList.toggle('hidden', !state.isRake);
   $('pot-score').textContent = '$' + state.pot;
 
+  if (!state.substitutes) state.substitutes = [null, null, null, null];
+
   state.names.forEach((n, i) => {
-    $('disp-name-' + i).textContent = n;
+    const sub = state.substitutes[i];
+    const cardEl = $('card-' + i);
+    const badgeEl = $('sub-badge-' + i);
+    const nameEl = $('disp-name-' + i);
+
+    if (sub) {
+      cardEl.classList.add('sub-active');
+      badgeEl.classList.remove('hidden');
+      badgeEl.textContent = `👤 ${sub} (代打)`;
+      nameEl.textContent = `原：${n}`;
+    } else {
+      cardEl.classList.remove('sub-active');
+      badgeEl.classList.add('hidden');
+      nameEl.textContent = n;
+    }
+
     const el = $('score-' + i), v = state.scores[i];
     el.textContent = (v > 0 ? '+' : '') + v;
     el.className = 'player-score ' + (v > 0 ? 'score-pos' : v < 0 ? 'score-neg' : 'score-zero');
@@ -952,7 +1108,8 @@ function setAction(a){
 }
 
 function renderWizard(){
-  $('wizard-player').textContent = selectedPlayer === null ? '' : state.names[selectedPlayer] + (wizardStep === 'action' ? '' : ' · ' + ACTION_NAMES[currentAction]);
+  const selDisp = selectedPlayer === null ? '' : getDisplayName(selectedPlayer);
+  $('wizard-player').textContent = selectedPlayer === null ? '' : selDisp + (wizardStep === 'action' ? '' : ' · ' + ACTION_NAMES[currentAction]);
   $('wizard-buttons').replaceChildren();
   $('wizard-buttons').className = '';
   $('wizard-note').textContent = '';
@@ -968,7 +1125,7 @@ function renderWizard(){
 
   if (wizardStep === 'player') {
     $('wizard-title').textContent = '揀選動作玩家';
-    state.names.forEach((n, i) => btn(n, () => { selectedPlayer = i; wizardGo('action'); }));
+    state.names.forEach((n, i) => btn(getDisplayName(i), () => { selectedPlayer = i; wizardGo('action'); }));
   } else if (wizardStep === 'action') {
     $('wizard-title').textContent = '揀結算動作';
     btn('自摸', () => setAction('win'), 'opt-btn-win');
@@ -985,7 +1142,7 @@ function renderWizard(){
   } else if (wizardStep === 'chase_winner') {
     $('wizard-title').textContent = '揀追牌收款者';
     state.names.forEach((n, i) => {
-      if (i !== selectedPlayer) btn(n, () => { payer = i; commitAction(); });
+      if (i !== selectedPlayer) btn(getDisplayName(i), () => { payer = i; commitAction(); });
     });
   } else if (wizardStep === 'special_amount') {
     $('wizard-title').textContent = '輸入每家需付金額';
@@ -1005,7 +1162,7 @@ function renderWizard(){
   } else if (wizardStep === 'payer') {
     $('wizard-title').textContent = currentAction === 'rob' ? '揀被搶者' : '揀被槓玩家';
     state.names.forEach((n, i) => {
-      if (i !== selectedPlayer) btn(n, () => { payer = i; wizardGo(currentAction === 'rob' ? 'horse' : 'kong'); });
+      if (i !== selectedPlayer) btn(getDisplayName(i), () => { payer = i; wizardGo(currentAction === 'rob' ? 'horse' : 'kong'); });
     });
   } else if (wizardStep === 'kong') {
     $('wizard-title').textContent = '有冇槓上自摸？';
@@ -1021,12 +1178,19 @@ function renderWizard(){
 }
 
 function commitAction(){
+  if (!state.substitutes) state.substitutes = [null, null, null, null];
   const actionData = {
     action: currentAction, player: selectedPlayer, payer, horses: horseCount,
     amount: customAmount, kongWin: $('kong-win').checked
   };
   const res = calculate(state, actionData);
-  const before = { names: state.names.slice(), scores: state.scores.slice(), pot: state.pot, isRake: state.isRake };
+  const before = {
+    names: state.names.slice(),
+    substitutes: state.substitutes.slice(),
+    scores: state.scores.slice(),
+    pot: state.pot,
+    isRake: state.isRake
+  };
 
   state.scores = state.scores.map((v, i) => v + res.delta[i]);
   state.pot += res.pot;
@@ -1035,7 +1199,13 @@ function commitAction(){
   state.history.push({
     id: crypto.randomUUID(), time: new Date().toISOString(), revision: state.revision,
     kind: 'action', ...actionData, before,
-    after: { names: state.names.slice(), scores: state.scores.slice(), pot: state.pot, isRake: state.isRake }
+    after: {
+      names: state.names.slice(),
+      substitutes: state.substitutes.slice(),
+      scores: state.scores.slice(),
+      pot: state.pot,
+      isRake: state.isRake
+    }
   });
 
   persist();
@@ -1074,38 +1244,39 @@ function logTitle(e){
   return ACTION_NAMES[e.action] + (e.kongWin ? '＋槓上自摸' : '');
 }
 
-/* 修改1：操作紀錄產生詳細描述 */
+/* 操作紀錄產生詳細描述 (包含代打人資訊) */
 function getActionDetailText(e){
   const names = e.before.names;
-  const actor = names[e.player];
+  const subs = e.before.substitutes || [null, null, null, null];
+  const actor = getDisplayName(e.player, names, subs);
   let act = '';
 
   if (e.action === 'win') {
     act = `${actor} 自摸（中 ${e.horses || 0} 隻馬）`;
   } else if (e.action === 'ming') {
-    const from = names[e.payer];
+    const from = getDisplayName(e.payer, names, subs);
     act = `${actor} 明槓 ${from}${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬，${from} 包自摸）` : ''}`;
   } else if (e.action === 'an') {
     act = `${actor} 暗槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
   } else if (e.action === 'bu') {
     act = `${actor} 補槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
   } else if (e.action === 'rob') {
-    act = `${actor} 搶 ${names[e.payer]} 槓（中 ${e.horses || 0} 隻馬）`;
+    act = `${actor} 搶 ${getDisplayName(e.payer, names, subs)} 槓（中 ${e.horses || 0} 隻馬）`;
   } else if (e.action === 'chase_normal') {
     act = `${actor} 被追牌（普通追牌，每家收 $10）`;
   } else if (e.action === 'chase_wild') {
-    act = `${actor} 被追牌（百搭追牌，由 ${names[e.payer]} 收 $30）`;
+    act = `${actor} 被追牌（百搭追牌，由 ${getDisplayName(e.payer, names, subs)} 收 $30）`;
   } else if (e.action === 'special_win') {
     act = `${actor} 特別糊牌（每家付出 $${e.amount}）`;
   } else {
     act = logTitle(e);
   }
 
-  // 結算分數明細
   const diffs = names.map((n, i) => {
     const diff = e.after.scores[i] - e.before.scores[i];
-    if (diff > 0) return `${n} <span class="pos">+$${diff}</span>`;
-    if (diff < 0) return `${n} <span class="neg">-$${Math.abs(diff)}</span>`;
+    const disp = subs[i] ? `${subs[i]}(代)` : n;
+    if (diff > 0) return `${disp} <span class="pos">+$${diff}</span>`;
+    if (diff < 0) return `${disp} <span class="neg">-$${Math.abs(diff)}</span>`;
     return null;
   }).filter(Boolean);
 
@@ -1115,8 +1286,11 @@ function getActionDetailText(e){
   return { act, diffText: diffs.join('， ') };
 }
 
+/* 統計視窗 (支援計算代打者獨立戰績與淨輸贏) */
 function openStats(){
   const stats = Array.from({ length: 4 }, () => ({ wins: 0, kongWins: 0, robWins: 0, mingKongs: 0, otherKongs: 0, chased: 0, totalHorses: 0 }));
+  const subRecords = {}; // key: `${subName}__${seatIdx}`
+
   for (const log of state.history) {
     if (log.kind !== 'action') continue;
     const p = log.player;
@@ -1131,6 +1305,33 @@ function openStats(){
       stats[p].chased++;
     }
     if (log.horses) stats[p].totalHorses += log.horses;
+
+    // 累計各位置代打者期間的獨立輸贏及戰績
+    const subs = log.before.substitutes || [null, null, null, null];
+    for (let i = 0; i < 4; i++) {
+      const subName = subs[i];
+      if (subName) {
+        const key = `${subName}__${i}`;
+        if (!subRecords[key]) {
+          subRecords[key] = {
+            subName,
+            seatIdx: i,
+            origName: log.before.names[i],
+            netScore: 0,
+            wins: 0,
+            kongs: 0,
+            horses: 0
+          };
+        }
+        const delta = log.after.scores[i] - log.before.scores[i];
+        subRecords[key].netScore += delta;
+        if (log.player === i) {
+          if (log.action === 'win' || log.action === 'rob' || log.kongWin) subRecords[key].wins++;
+          if (['ming','an','bu'].includes(log.action)) subRecords[key].kongs++;
+          if (log.horses) subRecords[key].horses += log.horses;
+        }
+      }
+    }
   }
 
   const findMax = (fn) => {
@@ -1155,6 +1356,26 @@ function openStats(){
     <div class="stats-badge-card"><div class="stats-badge-title">🎯 追牌苦主 (${topChased.val} 次)</div><div class="stats-badge-val">${topChased.names}</div></div>
   `;
 
+  // 渲染代打獨立結算表
+  const subList = Object.values(subRecords);
+  if (subList.length > 0) {
+    $('sub-stats-section').classList.remove('hidden');
+    $('sub-stats-body').innerHTML = subList.map(r => {
+      const scoreColor = r.netScore > 0 ? '#30d158' : r.netScore < 0 ? '#ff453a' : '#8e8e93';
+      const scoreText = (r.netScore > 0 ? '+' : '') + '$' + r.netScore;
+      return `<tr>
+        <td style="font-weight:bold;color:#ffd60a;">${r.subName}</td>
+        <td>代 ${r.origName}</td>
+        <td style="font-weight:800;color:${scoreColor};">${scoreText}</td>
+        <td>${r.wins}</td>
+        <td>${r.kongs}</td>
+        <td>${r.horses}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    $('sub-stats-section').classList.add('hidden');
+  }
+
   $('stats-table-body').innerHTML = state.names.map((n, i) => {
     const s = stats[i];
     return `<tr><td style="font-weight:bold;color:#ffd60a;">${n}</td><td>${s.wins}</td><td>${s.kongWins}</td><td>${s.robWins}</td><td>${s.mingKongs}</td><td>${s.otherKongs}</td><td>${s.chased}</td><td style="font-weight:bold;color:#30d158;">${s.totalHorses}</td></tr>`;
@@ -1163,7 +1384,6 @@ function openStats(){
   $('stats-menu').showModal();
 }
 
-/* 修改1：操作紀錄詳細顯示 */
 function openHistory(){
   const roundMap = getRoundsMap(state.history);
   $('history-list').replaceChildren();
@@ -1188,10 +1408,11 @@ function openHistory(){
 
 function exportHistory(){
   const roundMap = getRoundsMap(state.history);
-  const header = ['局數','操作','玩家1','玩家2','玩家3','玩家4','抽水箱'];
+  const header = ['局數','操作','明細','玩家1','玩家2','玩家3','玩家4','抽水箱'];
   const rows = [header];
   for (const e of state.history) {
-    rows.push([roundMap[e.id] || '-', logTitle(e), ...e.after.scores, e.after.pot]);
+    const details = getActionDetailText(e);
+    rows.push([roundMap[e.id] || '-', logTitle(e), `"${details.act}"`, ...e.after.scores, e.after.pot]);
   }
   const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
   const a = document.createElement('a');
