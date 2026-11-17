@@ -88,9 +88,8 @@
       position: relative;
     }
     .player-card:active { transform: scale(0.985); border-color: #ffd60a; }
-    .player-card.sub-active { border-color: rgba(255, 214, 10, 0.65); background: #222018; }
-    .player-name { font-size: clamp(18px, 3.2vw, 32px); color: #98989d; margin-bottom: 2px; font-weight: 600; text-align: center; }
-    .sub-badge { display: inline-block; background: #ffd60a; color: #000; font-size: clamp(12px, 1.8vw, 15px); font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-bottom: 4px; }
+    .seat-tag { position: absolute; top: 10px; left: 12px; font-size: 12px; color: #636366; font-weight: 700; }
+    .player-name { font-size: clamp(20px, 3.4vw, 34px); color: #e5e5ea; margin-bottom: 2px; font-weight: 700; text-align: center; }
     .player-score { font-size: clamp(40px, 8vw, 84px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
     .score-neg { color: #ff453a; }
@@ -121,9 +120,9 @@
       gap: 10px;
     }
 
-    /* 頂部導航列 */
-    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 6px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 8px 6px; background: #121212; }
-    #room-toolbar button { flex: 1; max-width: 140px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 13.5px; padding: 4px; font-weight: 600; cursor: pointer; }
+    /* 頂部導航列 (加入「🔄 換人」快捷鍵) */
+    #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 5px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 6px 6px; background: #121212; }
+    #room-toolbar button { flex: 1; max-width: 130px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 13px; padding: 4px 2px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 
     /* iPhone 專屬樣式微調 */
     @media (max-width: 600px) {
@@ -133,12 +132,12 @@
       .board-header h2 { font-size: 14px; }
       .board-header-right { font-size: 11.5px; gap: 5px; }
       .player-card { border-radius: 14px; padding: 4px; }
-      .player-name { font-size: 19px; }
+      .player-name { font-size: 20px; }
       .player-score { font-size: 44px; }
       .pot-card { padding: 4px 14px; border-radius: 12px; }
       .pot-title { font-size: 16px; }
       .pot-amount { font-size: 30px; }
-      #room-toolbar button { font-size: 12.5px; min-height: 38px; }
+      #room-toolbar button { font-size: 11.5px; min-height: 38px; }
     }
 
     /* 彈窗通用樣式 */
@@ -233,7 +232,7 @@
     .stats-badge-card { background: #2c2c2e; border: 1.5px solid #444; border-radius: 14px; padding: 14px; text-align: center; }
     .stats-badge-title { font-size: 14px; color: #ffd60a; font-weight: bold; margin-bottom: 6px; }
     .stats-badge-val { font-size: 22px; font-weight: 800; color: #fff; }
-    .stats-table-wrap { overflow-x: auto; margin-top: 12px; }
+    .stats-table-wrap { overflow-x: auto; margin-top: 10px; }
     .stats-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; }
     .stats-table th, .stats-table td { padding: 12px 8px; border-bottom: 1px solid #3a3a3c; white-space: nowrap; }
     .stats-table th { background: #2c2c2e; color: #8e8e93; font-weight: bold; }
@@ -251,16 +250,14 @@
     #seat-alert-modal h2 { font-size: 30px; color: #ffd60a; margin-bottom: 12px; }
     #seat-alert-modal p { font-size: 18px; color: #e5e5ea; line-height: 1.5; margin-bottom: 24px; }
 
-    /* 換人代打彈窗列表 */
-    .sub-slot-row { background: #2c2c2e; border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1.5px solid #444; }
-    .sub-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .sub-slot-title { font-size: 18px; font-weight: bold; color: #fff; }
-    .sub-slot-status { font-size: 14px; font-weight: bold; padding: 3px 8px; border-radius: 6px; }
-    .status-normal { background: #3a3a3c; color: #aaa; }
-    .status-sub { background: #ffd60a; color: #000; }
-    .sub-input-group { display: flex; gap: 8px; }
-    .sub-input-group input { flex: 1; min-height: 46px; background: #1c1c1e; border: 1.5px solid #666; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 17px; }
-    .sub-input-group button { min-height: 46px; padding: 0 16px; border: 0; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    /* 直接換人彈窗列表 */
+    .swap-slot-row { background: #2c2c2e; border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1.5px solid #444; }
+    .swap-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .swap-slot-title { font-size: 18px; font-weight: bold; color: #fff; }
+    .swap-slot-score { font-size: 16px; font-weight: 800; }
+    .swap-input-group { display: flex; gap: 8px; }
+    .swap-input-group input { flex: 1; min-height: 48px; background: #1c1c1e; border: 1.5px solid #666; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 17px; }
+    .swap-input-group button { min-height: 48px; padding: 0 18px; border: 0; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; background: #34c759; color: #fff; }
   </style>
 </head>
 <body>
@@ -272,12 +269,13 @@
     <div id="local-room-list" style="display:grid;gap:14px;"></div>
   </section>
 
-  <!-- 頂部工具列 -->
+  <!-- 頂部工具列 (加入「🔄 換人」按鈕) -->
   <nav id="room-toolbar" class="hidden">
-    <button id="btn-qr-share" onclick="openRoomQR()">📲 分享 QR</button>
+    <button id="btn-qr-share" onclick="openRoomQR()">📲 QR</button>
+    <button id="btn-swap-player" onclick="openSwapModal()" style="color:#ffd60a;">🔄 換人</button>
     <button onclick="openStats()">📊 統計</button>
     <button onclick="openHistory()">📋 紀錄</button>
-    <button id="btn-zero-scores" onclick="zeroScores()">🔄 分數歸零</button>
+    <button id="btn-zero-scores" onclick="zeroScores()">🧹 歸零</button>
     <button id="btn-settings-opt" onclick="openOptions()">⚙️ 設定</button>
   </nav>
 
@@ -289,7 +287,6 @@
         <h2 id="board-mode-tag">跑馬仔 · 抽水版</h2>
       </div>
       <div class="board-header-right">
-        <!-- 動態執位倒數計時器 (可點擊暫停/恢復) -->
         <span id="board-seat-countdown" onclick="toggleSeatTimerPause()" style="color:#ffd60a;font-weight:700;cursor:pointer;text-decoration:underline;">執位倒數: --:--:--</span>
         <span>·</span>
         <span id="board-start-time">開始: --:--</span>
@@ -308,22 +305,22 @@
 
     <div id="board-grid" class="grid-container grid-4">
       <div class="player-card" id="card-0" onclick="startActionFor(0)">
-        <div id="sub-badge-0" class="sub-badge hidden"></div>
+        <span class="seat-tag">東位</span>
         <div class="player-name" id="disp-name-0">東家</div>
         <div id="score-0" class="player-score score-zero">0</div>
       </div>
       <div class="player-card" id="card-1" onclick="startActionFor(1)">
-        <div id="sub-badge-1" class="sub-badge hidden"></div>
+        <span class="seat-tag">南位</span>
         <div class="player-name" id="disp-name-1">南家</div>
         <div id="score-1" class="player-score score-zero">0</div>
       </div>
       <div class="player-card" id="card-2" onclick="startActionFor(2)">
-        <div id="sub-badge-2" class="sub-badge hidden"></div>
+        <span class="seat-tag">西位</span>
         <div class="player-name" id="disp-name-2">西家</div>
         <div id="score-2" class="player-score score-zero">0</div>
       </div>
       <div class="player-card" id="card-3" onclick="startActionFor(3)">
-        <div id="sub-badge-3" class="sub-badge hidden"></div>
+        <span class="seat-tag">北位</span>
         <div class="player-name" id="disp-name-3">北家</div>
         <div id="score-3" class="player-score score-zero">0</div>
       </div>
@@ -371,17 +368,17 @@
     <input id="kong-win" type="checkbox" hidden>
   </dialog>
 
-  <!-- 換人／暫時代打設定彈窗 -->
-  <dialog id="sub-modal">
+  <!-- 直接換人接手彈窗 -->
+  <dialog id="swap-modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h2 style="margin:0;">🔄 換人／暫時代打設定</h2>
-      <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('sub-modal').close()">✕ 關閉</button>
+      <h2 style="margin:0;">🔄 隨時換人接手</h2>
+      <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('swap-modal').close()">✕ 關閉</button>
     </div>
     <p style="color:#aaa;font-size:15px;margin-bottom:16px;line-height:1.4;">
-      設定暫時代打後，該位置在代打期間的輸贏將獨立計算於代打者戰績（於「統計」中檢視）。原玩家歸位時請按結束代打。
+      換人後，舊玩家之前的輸贏會自動封存保留在「📊 統計」，新玩家接手該座位並從 <strong>$0</strong> 開始獨立計分。
     </p>
-    <div id="sub-slots-list"></div>
-    <button class="btn-start" style="margin-top:14px;" onclick="$('sub-modal').close()">完成並返回看板</button>
+    <div id="swap-slots-list"></div>
+    <button class="btn-start" style="margin-top:14px;" onclick="$('swap-modal').close()">返回看板</button>
   </dialog>
 
   <!-- 開局設定介面 -->
@@ -415,32 +412,15 @@
     </div>
     <div class="stats-card-grid" id="stats-top-badges"></div>
 
-    <!-- 新增：代打者獨立結算明細 -->
-    <div id="sub-stats-section" class="hidden">
-      <h3 style="font-size:18px;margin:18px 0 8px;color:#ffd60a;">🔄 換人／代打獨立結算</h3>
-      <div class="stats-table-wrap">
-        <table class="stats-table">
-          <thead>
-            <tr>
-              <th>代打人</th>
-              <th>代打位置</th>
-              <th>代打期間淨輸贏</th>
-              <th>自摸</th>
-              <th>槓牌</th>
-              <th>中馬</th>
-            </tr>
-          </thead>
-          <tbody id="sub-stats-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <h3 style="font-size:18px;margin:18px 0 8px;color:#8e8e93;">四個座位總結算明細</h3>
+    <!-- 個人總結算榜 (包含所有已換人離場及在席玩家) -->
+    <h3 style="font-size:18px;margin:18px 0 8px;color:#ffd60a;">👤 所有玩家個人總結算（散場找數榜）</h3>
     <div class="stats-table-wrap">
       <table class="stats-table">
         <thead>
           <tr>
             <th>玩家</th>
+            <th>狀態</th>
+            <th>個人總淨輸贏</th>
             <th>自摸</th>
             <th>槓上自摸</th>
             <th>搶槓</th>
@@ -450,9 +430,10 @@
             <th>總中馬</th>
           </tr>
         </thead>
-        <tbody id="stats-table-body"></tbody>
+        <tbody id="person-stats-body"></tbody>
       </table>
     </div>
+
     <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
@@ -471,8 +452,7 @@
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
-    <!-- 新增：換人／暫時代打管理入口 -->
-    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:68px;font-size:21px;background:#241d08;border:2px solid #ffd60a;color:#ffd60a;" onclick="$('options-menu').close();openSubModal()">🔄 換人／暫時代打管理</button>
+    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:68px;font-size:21px;background:#241d08;border:2px solid #ffd60a;color:#ffd60a;" onclick="$('options-menu').close();openSwapModal()">🔄 換人接手（獨立計分）</button>
 
     <div style="background:#2c2c2e;padding:16px;border-radius:14px;margin:16px 0;text-align:left;">
       <label style="font-size:17px;font-weight:bold;color:#ffd60a;display:block;margin-bottom:10px;">⏰ 定時執位提醒設定</label>
@@ -487,7 +467,7 @@
     </div>
 
     <button class="opt-btn" style="width:100%;margin-top:14px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();leaveToLobby()">返回房間大堂</button>
-    <button class="opt-btn" style="width:100%;margin-top:12px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();editSetup()">修改玩家名稱／玩法</button>
+    <button class="opt-btn" style="width:100%;margin-top:12px;min-height:64px;font-size:20px;" onclick="$('options-menu').close();editSetup()">修改現有玩家名稱／玩法</button>
     <button class="btn-start" style="margin-top:24px;" onclick="this.closest('dialog').close()">返回看板</button>
   </dialog>
 
@@ -496,7 +476,6 @@
 const $ = id => document.getElementById(id);
 let currentSlot = 1;
 
-// 檢查是否為透過 QR 加入的手機「睇分端」
 const joinPeerId = new URLSearchParams(location.search).get('join');
 const isViewerOnly = !!joinPeerId;
 
@@ -509,14 +488,15 @@ const PEER_CONFIG = {
   }
 };
 
+const SEAT_LABELS = ['東位', '南位', '西位', '北位'];
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
+
 let state = {
-  version: 3,
+  version: 4,
   revision: 0,
   startedAt: new Date().toISOString(),
   isRake: true,
   names: ['東家','南家','西家','北家'],
-  substitutes: [null, null, null, null], // 紀錄各位置目前代打人名稱，null 代表原玩家
   scores: [0,0,0,0],
   pot: 0,
   history: [],
@@ -528,14 +508,11 @@ let state = {
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
-const ACTION_NAMES = { win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓', chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌', special_win: '特別糊牌', undo: '撤銷上一手' };
-
-/* 輔助取得某位置目前顯示名字（若有代打則顯示：代打人 (代 原玩家)） */
-function getDisplayName(idx, namesArr = state.names, subsArr = state.substitutes){
-  const orig = namesArr[idx] || ['東家','南家','西家','北家'][idx];
-  const sub = subsArr && subsArr[idx];
-  return sub ? `${sub} (代 ${orig})` : orig;
-}
+const ACTION_NAMES = {
+  win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓',
+  chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌',
+  special_win: '特別糊牌', swap: '換人接手', undo: '撤銷上一手'
+};
 
 /* Web Audio 產生叮咚提示聲 */
 function playDingDong(){
@@ -652,61 +629,90 @@ function updateSeatTimerConfig(){
   renderBoard();
 }
 
-/* 換人／暫時代打管理視窗 */
-function openSubModal(){
+/* 隨時直接換人接手功能 */
+function openSwapModal(){
   if (isViewerOnly) return;
-  renderSubSlots();
-  $('sub-modal').showModal();
+  renderSwapSlots();
+  $('swap-modal').showModal();
 }
 
-function renderSubSlots(){
-  if (!state.substitutes) state.substitutes = [null, null, null, null];
-  const container = $('sub-slots-list');
+function renderSwapSlots(){
+  const container = $('swap-slots-list');
   container.replaceChildren();
 
-  state.names.forEach((origName, i) => {
-    const currentSub = state.substitutes[i];
-    const row = document.createElement('div');
-    row.className = 'sub-slot-row';
-    
-    const statusHtml = currentSub 
-      ? `<span class="sub-slot-status status-sub">代打中：${currentSub}</span>`
-      : `<span class="sub-slot-status status-normal">原玩家在席</span>`;
+  state.names.forEach((curName, i) => {
+    const curScore = state.scores[i];
+    const scoreColor = curScore > 0 ? '#30d158' : curScore < 0 ? '#ff453a' : '#8e8e93';
+    const scoreStr = (curScore > 0 ? '+' : '') + '$' + curScore;
 
+    const row = document.createElement('div');
+    row.className = 'swap-slot-row';
     row.innerHTML = `
-      <div class="sub-slot-header">
-        <span class="sub-slot-title">座位 ${i+1}：${origName}</span>
-        ${statusHtml}
+      <div class="swap-slot-header">
+        <span class="swap-slot-title">${SEAT_LABELS[i]}：目前「${curName}」</span>
+        <span class="swap-slot-score" style="color:${scoreColor};">本輪分數：${scoreStr}</span>
       </div>
-      <div class="sub-input-group">
-        <input type="text" id="sub-input-${i}" placeholder="輸入代打人名稱 (如：阿強)" value="${currentSub || ''}">
-        <button type="button" style="background:#34c759;color:#fff;" onclick="setSubstitute(${i})">確認代打</button>
-        ${currentSub ? `<button type="button" style="background:#ff453a;color:#fff;" onclick="clearSubstitute(${i})">結束代打</button>` : ''}
+      <div class="swap-input-group">
+        <input type="text" id="swap-input-${i}" placeholder="輸入新接手玩家名字">
+        <button type="button" onclick="confirmSwap(${i})">確認換人</button>
       </div>
     `;
     container.append(row);
   });
 }
 
-function setSubstitute(idx){
-  const inputEl = $('sub-input-' + idx);
-  const subName = inputEl ? inputEl.value.trim() : '';
-  if (!subName) {
-    alert('請輸入代打人名稱！');
+function confirmSwap(seatIdx){
+  const inputEl = $('swap-input-' + seatIdx);
+  const newName = inputEl ? inputEl.value.trim() : '';
+  if (!newName) {
+    alert('請輸入新接手玩家的名字！');
     return;
   }
-  if (!state.substitutes) state.substitutes = [null, null, null, null];
-  state.substitutes[idx] = subName;
-  persist();
-  renderSubSlots();
-  renderBoard();
-}
+  const oldName = state.names[seatIdx];
+  if (newName === oldName) {
+    alert('新名字與現有玩家相同！');
+    return;
+  }
 
-function clearSubstitute(idx){
-  if (!state.substitutes) state.substitutes = [null, null, null, null];
-  state.substitutes[idx] = null;
+  const oldScore = state.scores[seatIdx];
+  const scoreTxt = (oldScore > 0 ? '+' : '') + '$' + oldScore;
+  if (!confirm(`確定將【${SEAT_LABELS[seatIdx]}】由「${oldName}」換成「${newName}」？\n\n• 「${oldName}」本輪分數（${scoreTxt}）會封存記入個人統計。\n• 「${newName}」將由 $0 開始獨立計分。`)) {
+    return;
+  }
+
+  const before = {
+    names: state.names.slice(),
+    scores: state.scores.slice(),
+    pot: state.pot,
+    isRake: state.isRake
+  };
+
+  // 更新座位名字並將該座位本輪顯示分數重設為 0（由新玩家獨立開始）
+  state.names[seatIdx] = newName;
+  state.scores[seatIdx] = 0;
+  state.revision++;
+
+  state.history.push({
+    id: crypto.randomUUID(),
+    time: new Date().toISOString(),
+    revision: state.revision,
+    kind: 'swap',
+    action: 'swap',
+    player: seatIdx,
+    oldName,
+    newName,
+    oldScore,
+    before,
+    after: {
+      names: state.names.slice(),
+      scores: state.scores.slice(),
+      pot: state.pot,
+      isRake: state.isRake
+    }
+  });
+
   persist();
-  renderSubSlots();
+  renderSwapSlots();
   renderBoard();
 }
 
@@ -774,6 +780,7 @@ function startViewerMode(){
   $('online-status-badge').textContent = '● 正在同步 iPad…';
   $('online-status-badge').style.color = '#ff9f0a';
   $('btn-qr-share').classList.add('hidden');
+  $('btn-swap-player').classList.add('hidden');
   $('btn-zero-scores').classList.add('hidden');
   $('btn-settings-opt').classList.add('hidden');
   $('fab-score').classList.add('hidden');
@@ -842,7 +849,6 @@ function selectRoom(slot){
       const saved = JSON.parse(raw);
       if (saved && saved.names) {
         state = saved;
-        if (!state.substitutes) state.substitutes = [null, null, null, null];
         showBoardView();
         initP2P();
         return;
@@ -851,9 +857,8 @@ function selectRoom(slot){
   } catch(e){}
   
   state = {
-    version: 3, revision: 0, startedAt: new Date().toISOString(), isRake: true,
+    version: 4, revision: 0, startedAt: new Date().toISOString(), isRake: true,
     names: ['東家','南家','西家','北家'],
-    substitutes: [null, null, null, null],
     scores: [0,0,0,0], pot: 0, history: [],
     seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
     isTimerPaused: false, pausedRemainingMs: 0
@@ -996,21 +1001,25 @@ function getRoundsMap(logs) {
 
 function getLatestActionSummary(){
   const logs = state.history || [];
-  const lastLog = [...logs].reverse().find(l => l.kind === 'action');
+  const lastLog = [...logs].reverse().find(l => l.kind === 'action' || l.kind === 'swap');
   if (!lastLog) return null;
+
+  if (lastLog.kind === 'swap') {
+    const s = lastLog.oldScore;
+    return `換人：${SEAT_LABELS[lastLog.player]}「${lastLog.oldName}」(${s > 0 ? '+' : ''}$${s}) ➔ 「${lastLog.newName}」($0)`;
+  }
+
   const names = lastLog.before.names;
-  const subs = lastLog.before.substitutes || [null, null, null, null];
-  const actorDisp = getDisplayName(lastLog.player, names, subs);
+  const actorDisp = names[lastLog.player];
 
   let desc = '';
   if (lastLog.action === 'chase_normal') desc = `被追牌 ${actorDisp}（每家收$10）`;
-  else if (lastLog.action === 'chase_wild') desc = `被追牌 ${actorDisp} ➔ ${getDisplayName(lastLog.payer, names, subs)}（$30）`;
+  else if (lastLog.action === 'chase_wild') desc = `被追牌 ${actorDisp} ➔ ${names[lastLog.payer]}（$30）`;
   else if (lastLog.action === 'special_win') desc = `特別糊牌 ${actorDisp}（每家收 $${lastLog.amount}）`;
   else {
     const changes = names.map((n, i) => {
       const d = lastLog.after.scores[i] - lastLog.before.scores[i];
-      const disp = subs[i] ? subs[i] : n;
-      return d !== 0 ? (disp + ' ' + (d > 0 ? '+' : '') + '$' + d) : null;
+      return d !== 0 ? (n + ' ' + (d > 0 ? '+' : '') + '$' + d) : null;
     }).filter(Boolean).join('，');
     desc = `${actorDisp} ${logTitle(lastLog)}（${changes}）`;
   }
@@ -1040,25 +1049,8 @@ function renderBoard(){
   $('pot-card').classList.toggle('hidden', !state.isRake);
   $('pot-score').textContent = '$' + state.pot;
 
-  if (!state.substitutes) state.substitutes = [null, null, null, null];
-
   state.names.forEach((n, i) => {
-    const sub = state.substitutes[i];
-    const cardEl = $('card-' + i);
-    const badgeEl = $('sub-badge-' + i);
-    const nameEl = $('disp-name-' + i);
-
-    if (sub) {
-      cardEl.classList.add('sub-active');
-      badgeEl.classList.remove('hidden');
-      badgeEl.textContent = `👤 ${sub} (代打)`;
-      nameEl.textContent = `原：${n}`;
-    } else {
-      cardEl.classList.remove('sub-active');
-      badgeEl.classList.add('hidden');
-      nameEl.textContent = n;
-    }
-
+    $('disp-name-' + i).textContent = n;
     const el = $('score-' + i), v = state.scores[i];
     el.textContent = (v > 0 ? '+' : '') + v;
     el.className = 'player-score ' + (v > 0 ? 'score-pos' : v < 0 ? 'score-neg' : 'score-zero');
@@ -1108,7 +1100,7 @@ function setAction(a){
 }
 
 function renderWizard(){
-  const selDisp = selectedPlayer === null ? '' : getDisplayName(selectedPlayer);
+  const selDisp = selectedPlayer === null ? '' : state.names[selectedPlayer];
   $('wizard-player').textContent = selectedPlayer === null ? '' : selDisp + (wizardStep === 'action' ? '' : ' · ' + ACTION_NAMES[currentAction]);
   $('wizard-buttons').replaceChildren();
   $('wizard-buttons').className = '';
@@ -1125,7 +1117,7 @@ function renderWizard(){
 
   if (wizardStep === 'player') {
     $('wizard-title').textContent = '揀選動作玩家';
-    state.names.forEach((n, i) => btn(getDisplayName(i), () => { selectedPlayer = i; wizardGo('action'); }));
+    state.names.forEach((n, i) => btn(n, () => { selectedPlayer = i; wizardGo('action'); }));
   } else if (wizardStep === 'action') {
     $('wizard-title').textContent = '揀結算動作';
     btn('自摸', () => setAction('win'), 'opt-btn-win');
@@ -1142,7 +1134,7 @@ function renderWizard(){
   } else if (wizardStep === 'chase_winner') {
     $('wizard-title').textContent = '揀追牌收款者';
     state.names.forEach((n, i) => {
-      if (i !== selectedPlayer) btn(getDisplayName(i), () => { payer = i; commitAction(); });
+      if (i !== selectedPlayer) btn(n, () => { payer = i; commitAction(); });
     });
   } else if (wizardStep === 'special_amount') {
     $('wizard-title').textContent = '輸入每家需付金額';
@@ -1162,7 +1154,7 @@ function renderWizard(){
   } else if (wizardStep === 'payer') {
     $('wizard-title').textContent = currentAction === 'rob' ? '揀被搶者' : '揀被槓玩家';
     state.names.forEach((n, i) => {
-      if (i !== selectedPlayer) btn(getDisplayName(i), () => { payer = i; wizardGo(currentAction === 'rob' ? 'horse' : 'kong'); });
+      if (i !== selectedPlayer) btn(n, () => { payer = i; wizardGo(currentAction === 'rob' ? 'horse' : 'kong'); });
     });
   } else if (wizardStep === 'kong') {
     $('wizard-title').textContent = '有冇槓上自摸？';
@@ -1178,7 +1170,6 @@ function renderWizard(){
 }
 
 function commitAction(){
-  if (!state.substitutes) state.substitutes = [null, null, null, null];
   const actionData = {
     action: currentAction, player: selectedPlayer, payer, horses: horseCount,
     amount: customAmount, kongWin: $('kong-win').checked
@@ -1186,7 +1177,6 @@ function commitAction(){
   const res = calculate(state, actionData);
   const before = {
     names: state.names.slice(),
-    substitutes: state.substitutes.slice(),
     scores: state.scores.slice(),
     pot: state.pot,
     isRake: state.isRake
@@ -1201,7 +1191,6 @@ function commitAction(){
     kind: 'action', ...actionData, before,
     after: {
       names: state.names.slice(),
-      substitutes: state.substitutes.slice(),
       scores: state.scores.slice(),
       pot: state.pot,
       isRake: state.isRake
@@ -1215,12 +1204,17 @@ function commitAction(){
 
 function undoLastAction(){
   if (isViewerOnly) return;
-  const lastAction = [...state.history].reverse().find(l => l.kind === 'action');
-  if (!lastAction) return;
-  if (!confirm('確定撤銷上一手？分數同抽水箱會返回該動作之前。')) return;
-  state.scores = lastAction.before.scores.slice();
-  state.pot = lastAction.before.pot;
-  state.history.splice(state.history.indexOf(lastAction), 1);
+  const lastLog = [...state.history].reverse().find(l => l.kind === 'action' || l.kind === 'swap');
+  if (!lastLog) return;
+  const msg = lastLog.kind === 'swap'
+    ? `確定撤銷剛才的換人操作？「${lastLog.newName}」會恢復為「${lastLog.oldName}」及原有分數。`
+    : '確定撤銷上一手？分數同抽水箱會返回該動作之前。';
+  if (!confirm(msg)) return;
+
+  state.names = lastLog.before.names.slice();
+  state.scores = lastLog.before.scores.slice();
+  state.pot = lastLog.before.pot;
+  state.history.splice(state.history.indexOf(lastLog), 1);
   persist();
   renderBoard();
 }
@@ -1241,31 +1235,40 @@ function zeroScores(){
 }
 
 function logTitle(e){
+  if (e.kind === 'swap') return `換人接手 (${SEAT_LABELS[e.player]})`;
   return ACTION_NAMES[e.action] + (e.kongWin ? '＋槓上自摸' : '');
 }
 
-/* 操作紀錄產生詳細描述 (包含代打人資訊) */
+/* 操作紀錄產生詳細描述 */
 function getActionDetailText(e){
+  if (e.kind === 'swap') {
+    const s = e.oldScore;
+    const scoreStr = s > 0 ? `<span class="pos">+$${s}</span>` : s < 0 ? `<span class="neg">-$${Math.abs(s)}</span>` : '$0';
+    return {
+      act: `【${SEAT_LABELS[e.player]}】由「${e.oldName}」換成「${e.newName}」上陣`,
+      diffText: `${e.oldName} 結算封存：${scoreStr} ｜ ${e.newName} 由 $0 重新開波`
+    };
+  }
+
   const names = e.before.names;
-  const subs = e.before.substitutes || [null, null, null, null];
-  const actor = getDisplayName(e.player, names, subs);
+  const actor = names[e.player];
   let act = '';
 
   if (e.action === 'win') {
     act = `${actor} 自摸（中 ${e.horses || 0} 隻馬）`;
   } else if (e.action === 'ming') {
-    const from = getDisplayName(e.payer, names, subs);
+    const from = names[e.payer];
     act = `${actor} 明槓 ${from}${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬，${from} 包自摸）` : ''}`;
   } else if (e.action === 'an') {
     act = `${actor} 暗槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
   } else if (e.action === 'bu') {
     act = `${actor} 補槓${e.kongWin ? ` ＋ 槓上自摸（中 ${e.horses || 0} 隻馬）` : ''}`;
   } else if (e.action === 'rob') {
-    act = `${actor} 搶 ${getDisplayName(e.payer, names, subs)} 槓（中 ${e.horses || 0} 隻馬）`;
+    act = `${actor} 搶 ${names[e.payer]} 槓（中 ${e.horses || 0} 隻馬）`;
   } else if (e.action === 'chase_normal') {
     act = `${actor} 被追牌（普通追牌，每家收 $10）`;
   } else if (e.action === 'chase_wild') {
-    act = `${actor} 被追牌（百搭追牌，由 ${getDisplayName(e.payer, names, subs)} 收 $30）`;
+    act = `${actor} 被追牌（百搭追牌，由 ${names[e.payer]} 收 $30）`;
   } else if (e.action === 'special_win') {
     act = `${actor} 特別糊牌（每家付出 $${e.amount}）`;
   } else {
@@ -1274,9 +1277,8 @@ function getActionDetailText(e){
 
   const diffs = names.map((n, i) => {
     const diff = e.after.scores[i] - e.before.scores[i];
-    const disp = subs[i] ? `${subs[i]}(代)` : n;
-    if (diff > 0) return `${disp} <span class="pos">+$${diff}</span>`;
-    if (diff < 0) return `${disp} <span class="neg">-$${Math.abs(diff)}</span>`;
+    if (diff > 0) return `${n} <span class="pos">+$${diff}</span>`;
+    if (diff < 0) return `${n} <span class="neg">-$${Math.abs(diff)}</span>`;
     return null;
   }).filter(Boolean);
 
@@ -1286,68 +1288,78 @@ function getActionDetailText(e){
   return { act, diffText: diffs.join('， ') };
 }
 
-/* 統計視窗 (支援計算代打者獨立戰績與淨輸贏) */
+/* 統計視窗 (按人頭自動累計所有在場及離場玩家戰績與淨輸贏) */
 function openStats(){
-  const stats = Array.from({ length: 4 }, () => ({ wins: 0, kongWins: 0, robWins: 0, mingKongs: 0, otherKongs: 0, chased: 0, totalHorses: 0 }));
-  const subRecords = {}; // key: `${subName}__${seatIdx}`
+  const personStats = {}; // key: playerName
 
+  const ensurePerson = (name) => {
+    if (!personStats[name]) {
+      personStats[name] = {
+        name,
+        netScore: 0,
+        wins: 0,
+        kongWins: 0,
+        robWins: 0,
+        mingKongs: 0,
+        otherKongs: 0,
+        chased: 0,
+        totalHorses: 0,
+        activeSeat: null
+      };
+    }
+    return personStats[name];
+  };
+
+  // 先建立目前在席四位玩家
+  state.names.forEach((n, idx) => {
+    const p = ensurePerson(n);
+    p.activeSeat = SEAT_LABELS[idx];
+  });
+
+  // 逐筆掃描歷史紀錄，按每手當時在席的人名精準計算淨輸贏及動作次數
   for (const log of state.history) {
     if (log.kind !== 'action') continue;
-    const p = log.player;
-    if (p < 0 || p >= 4) continue;
-    if (log.action === 'win') stats[p].wins++;
-    else if (log.action === 'rob') stats[p].robWins++;
-    else if (['ming','an','bu'].includes(log.action)) {
-      if (log.kongWin) stats[p].kongWins++;
-      if (log.action === 'ming') stats[p].mingKongs++;
-      else stats[p].otherKongs++;
-    } else if (log.action === 'chase_normal' || log.action === 'chase_wild') {
-      stats[p].chased++;
-    }
-    if (log.horses) stats[p].totalHorses += log.horses;
+    const namesAtTime = log.before.names;
+    const actorIdx = log.player;
+    const actorName = namesAtTime[actorIdx];
 
-    // 累計各位置代打者期間的獨立輸贏及戰績
-    const subs = log.before.substitutes || [null, null, null, null];
+    // 累計每家分數變動
     for (let i = 0; i < 4; i++) {
-      const subName = subs[i];
-      if (subName) {
-        const key = `${subName}__${i}`;
-        if (!subRecords[key]) {
-          subRecords[key] = {
-            subName,
-            seatIdx: i,
-            origName: log.before.names[i],
-            netScore: 0,
-            wins: 0,
-            kongs: 0,
-            horses: 0
-          };
-        }
-        const delta = log.after.scores[i] - log.before.scores[i];
-        subRecords[key].netScore += delta;
-        if (log.player === i) {
-          if (log.action === 'win' || log.action === 'rob' || log.kongWin) subRecords[key].wins++;
-          if (['ming','an','bu'].includes(log.action)) subRecords[key].kongs++;
-          if (log.horses) subRecords[key].horses += log.horses;
-        }
-      }
+      const pName = namesAtTime[i];
+      const delta = log.after.scores[i] - log.before.scores[i];
+      ensurePerson(pName).netScore += delta;
     }
+
+    // 累計發動動作玩家的戰績
+    const actorObj = ensurePerson(actorName);
+    if (log.action === 'win') actorObj.wins++;
+    else if (log.action === 'rob') actorObj.robWins++;
+    else if (['ming','an','bu'].includes(log.action)) {
+      if (log.kongWin) actorObj.kongWins++;
+      if (log.action === 'ming') actorObj.mingKongs++;
+      else actorObj.otherKongs++;
+    } else if (log.action === 'chase_normal' || log.action === 'chase_wild') {
+      actorObj.chased++;
+    }
+    if (log.horses) actorObj.totalHorses += log.horses;
   }
+
+  const allPlayers = Object.values(personStats);
 
   const findMax = (fn) => {
     let max = 0, names = [];
-    stats.forEach((s, i) => {
-      const v = fn(s);
-      if (v > max) { max = v; names = [state.names[i]]; }
-      else if (v === max && max > 0) { names.push(state.names[i]); }
+    allPlayers.forEach(p => {
+      const v = fn(p);
+      if (v > max) { max = v; names = [p.name]; }
+      else if (v === max && max > 0) { names.push(p.name); }
     });
     return max > 0 ? { val: max, names: names.join('、') } : { val: 0, names: '未有' };
   };
 
-  const topWin = findMax(s => s.wins + s.kongWins);
-  const topHorse = findMax(s => s.totalHorses);
-  const topKong = findMax(s => s.mingKongs + s.otherKongs);
-  const topChased = findMax(s => s.chased);
+  const topWin = findMax(p => p.wins + p.kongWins);
+  const topHorse = findMax(p => p.totalHorses);
+  const topKong = findMax(p => p.mingKongs + p.otherKongs);
+  const topChased = findMax(p => p.chased);
 
   $('stats-top-badges').innerHTML = `
     <div class="stats-badge-card"><div class="stats-badge-title">🏆 自摸王 (${topWin.val} 次)</div><div class="stats-badge-val">${topWin.names}</div></div>
@@ -1356,29 +1368,25 @@ function openStats(){
     <div class="stats-badge-card"><div class="stats-badge-title">🎯 追牌苦主 (${topChased.val} 次)</div><div class="stats-badge-val">${topChased.names}</div></div>
   `;
 
-  // 渲染代打獨立結算表
-  const subList = Object.values(subRecords);
-  if (subList.length > 0) {
-    $('sub-stats-section').classList.remove('hidden');
-    $('sub-stats-body').innerHTML = subList.map(r => {
-      const scoreColor = r.netScore > 0 ? '#30d158' : r.netScore < 0 ? '#ff453a' : '#8e8e93';
-      const scoreText = (r.netScore > 0 ? '+' : '') + '$' + r.netScore;
-      return `<tr>
-        <td style="font-weight:bold;color:#ffd60a;">${r.subName}</td>
-        <td>代 ${r.origName}</td>
-        <td style="font-weight:800;color:${scoreColor};">${scoreText}</td>
-        <td>${r.wins}</td>
-        <td>${r.kongs}</td>
-        <td>${r.horses}</td>
-      </tr>`;
-    }).join('');
-  } else {
-    $('sub-stats-section').classList.add('hidden');
-  }
+  $('person-stats-body').innerHTML = allPlayers.map(p => {
+    const scoreColor = p.netScore > 0 ? '#30d158' : p.netScore < 0 ? '#ff453a' : '#8e8e93';
+    const scoreStr = (p.netScore > 0 ? '+' : '') + '$' + p.netScore;
+    const statusBadge = p.activeSeat
+      ? `<span style="background:#1e3a24;color:#30d158;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:bold;">在席 (${p.activeSeat})</span>`
+      : `<span style="background:#3a3a3c;color:#aaa;padding:3px 8px;border-radius:6px;font-size:13px;">已換走</span>`;
 
-  $('stats-table-body').innerHTML = state.names.map((n, i) => {
-    const s = stats[i];
-    return `<tr><td style="font-weight:bold;color:#ffd60a;">${n}</td><td>${s.wins}</td><td>${s.kongWins}</td><td>${s.robWins}</td><td>${s.mingKongs}</td><td>${s.otherKongs}</td><td>${s.chased}</td><td style="font-weight:bold;color:#30d158;">${s.totalHorses}</td></tr>`;
+    return `<tr>
+      <td style="font-weight:bold;color:#ffd60a;">${p.name}</td>
+      <td>${statusBadge}</td>
+      <td style="font-weight:800;color:${scoreColor};font-size:18px;">${scoreStr}</td>
+      <td>${p.wins}</td>
+      <td>${p.kongWins}</td>
+      <td>${p.robWins}</td>
+      <td>${p.mingKongs}</td>
+      <td>${p.otherKongs}</td>
+      <td>${p.chased}</td>
+      <td style="font-weight:bold;color:#30d158;">${p.totalHorses}</td>
+    </tr>`;
   }).join('');
 
   $('stats-menu').showModal();
@@ -1408,7 +1416,7 @@ function openHistory(){
 
 function exportHistory(){
   const roundMap = getRoundsMap(state.history);
-  const header = ['局數','操作','明細','玩家1','玩家2','玩家3','玩家4','抽水箱'];
+  const header = ['局數','操作','明細','東位分數','南位分數','西位分數','北位分數','抽水箱'];
   const rows = [header];
   for (const e of state.history) {
     const details = getActionDetailText(e);
