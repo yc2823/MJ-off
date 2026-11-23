@@ -120,7 +120,7 @@
       gap: 10px;
     }
 
-    /* 頂部導航列 (加入「🔄 換人」快捷鍵) */
+    /* 頂部導航列 */
     #room-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 110; display: flex; gap: 5px; justify-content: center; padding: calc(6px + env(safe-area-inset-top)) 6px 6px; background: #121212; }
     #room-toolbar button { flex: 1; max-width: 130px; min-width: 0; min-height: 42px; border: 0; border-radius: 10px; background: #2c2c2e; color: white; font-size: 13px; padding: 4px 2px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 
@@ -250,7 +250,17 @@
     #seat-alert-modal h2 { font-size: 30px; color: #ffd60a; margin-bottom: 12px; }
     #seat-alert-modal p { font-size: 18px; color: #e5e5ea; line-height: 1.5; margin-bottom: 24px; }
 
-    /* 直接換人彈窗列表 */
+    /* 直接換人與後備區彈窗列表 */
+    .bench-box { background: #241d08; border: 1.5px solid #ffd60a; border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+    .bench-title { font-size: 16px; font-weight: bold; color: #ffd60a; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .bench-list { display: flex; flex-wrap: wrap; gap: 10px; }
+    .bench-chip { background: #2c2c2e; border: 1.5px solid #666; color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.08s, border-color 0.08s; }
+    .bench-chip:active { transform: scale(0.97); border-color: #ffd60a; }
+    .bench-chip.selected { border-color: #ffd60a; background: #3a3010; box-shadow: 0 0 12px rgba(255, 214, 10, 0.35); }
+    .bench-seat-picker { margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255, 214, 10, 0.4); }
+    .bench-seat-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+    .bench-seat-btn { min-height: 46px; background: #34c759; color: #fff; border: 0; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; padding: 8px; }
+
     .swap-slot-row { background: #2c2c2e; border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1.5px solid #444; }
     .swap-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .swap-slot-title { font-size: 18px; font-weight: bold; color: #fff; }
@@ -269,7 +279,7 @@
     <div id="local-room-list" style="display:grid;gap:14px;"></div>
   </section>
 
-  <!-- 頂部工具列 (加入「🔄 換人」按鈕) -->
+  <!-- 頂部工具列 -->
   <nav id="room-toolbar" class="hidden">
     <button id="btn-qr-share" onclick="openRoomQR()">📲 QR</button>
     <button id="btn-swap-player" onclick="openSwapModal()" style="color:#ffd60a;">🔄 換人</button>
@@ -368,15 +378,28 @@
     <input id="kong-win" type="checkbox" hidden>
   </dialog>
 
-  <!-- 直接換人接手彈窗 -->
+  <!-- 直接換人接手與後備區彈窗 -->
   <dialog id="swap-modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <h2 style="margin:0;">🔄 隨時換人接手</h2>
       <button class="btn-undo" style="font-size:16px;padding:8px 16px;" onclick="$('swap-modal').close()">✕ 關閉</button>
     </div>
-    <p style="color:#aaa;font-size:15px;margin-bottom:16px;line-height:1.4;">
-      換人後，舊玩家之前的輸贏會自動封存保留在「📊 統計」，新玩家接手該座位並從 <strong>$0</strong> 開始獨立計分。
+    <p style="color:#aaa;font-size:15px;margin-bottom:14px;line-height:1.4;">
+      被換出的玩家及其分數會保留在「<strong>🪑 後備區</strong>」，隨時可一鍵換返上檯並<strong>繼承原有輸贏分數</strong>繼續計算。
     </p>
+
+    <!-- 後備區（已換出玩家列表） -->
+    <div id="bench-container" class="bench-box hidden">
+      <div class="bench-title">
+        <span>🪑 後備區（點擊名字可隨時換返上檯繼承分數）</span>
+      </div>
+      <div id="bench-list" class="bench-list"></div>
+      <div id="bench-seat-picker" class="bench-seat-picker hidden">
+        <div id="bench-picker-prompt" style="font-size:15px;color:#ffd60a;font-weight:bold;"></div>
+        <div id="bench-seat-btns" class="bench-seat-btns"></div>
+      </div>
+    </div>
+
     <div id="swap-slots-list"></div>
     <button class="btn-start" style="margin-top:14px;" onclick="$('swap-modal').close()">返回看板</button>
   </dialog>
@@ -412,7 +435,7 @@
     </div>
     <div class="stats-card-grid" id="stats-top-badges"></div>
 
-    <!-- 個人總結算榜 (包含所有已換人離場及在席玩家) -->
+    <!-- 個人總結算榜 -->
     <h3 style="font-size:18px;margin:18px 0 8px;color:#ffd60a;">👤 所有玩家個人總結算（散場找數榜）</h3>
     <div class="stats-table-wrap">
       <table class="stats-table">
@@ -452,7 +475,7 @@
   <dialog id="options-menu">
     <h2>⚙️ 設定與管理</h2>
     
-    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:68px;font-size:21px;background:#241d08;border:2px solid #ffd60a;color:#ffd60a;" onclick="$('options-menu').close();openSwapModal()">🔄 換人接手（獨立計分）</button>
+    <button class="opt-btn" style="width:100%;margin-top:14px;min-height:68px;font-size:21px;background:#241d08;border:2px solid #ffd60a;color:#ffd60a;" onclick="$('options-menu').close();openSwapModal()">🔄 換人接手／後備區管理</button>
 
     <div style="background:#2c2c2e;padding:16px;border-radius:14px;margin:16px 0;text-align:left;">
       <label style="font-size:17px;font-weight:bold;color:#ffd60a;display:block;margin-bottom:10px;">⏰ 定時執位提醒設定</label>
@@ -492,12 +515,13 @@ const SEAT_LABELS = ['東位', '南位', '西位', '北位'];
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 
 let state = {
-  version: 4,
+  version: 5,
   revision: 0,
   startedAt: new Date().toISOString(),
   isRake: true,
   names: ['東家','南家','西家','北家'],
   scores: [0,0,0,0],
+  bench: [], // 後備區陣列：[{ name: 'Joe', score: 220 }, ...]
   pot: 0,
   history: [],
   seatReminderInterval: 120,
@@ -508,6 +532,8 @@ let state = {
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
+let selectedBenchPlayer = null; // 紀錄在後備區點擊準備換上的玩家名稱
+
 const ACTION_NAMES = {
   win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓',
   chase: '被追牌', chase_normal: '普通追牌', chase_wild: '百搭追牌',
@@ -629,14 +655,69 @@ function updateSeatTimerConfig(){
   renderBoard();
 }
 
-/* 隨時直接換人接手功能 */
+/* 隨時直接換人接手 & 後備區管理 */
 function openSwapModal(){
   if (isViewerOnly) return;
+  selectedBenchPlayer = null;
   renderSwapSlots();
   $('swap-modal').showModal();
 }
 
 function renderSwapSlots(){
+  if (!Array.isArray(state.bench)) state.bench = [];
+
+  // 1. 渲染後備區（若有離場玩家）
+  const benchContainer = $('bench-container');
+  const benchList = $('bench-list');
+  const seatPicker = $('bench-seat-picker');
+
+  if (state.bench.length > 0) {
+    benchContainer.classList.remove('hidden');
+    benchList.replaceChildren();
+
+    state.bench.forEach(item => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'bench-chip' + (selectedBenchPlayer === item.name ? ' selected' : '');
+      const sColor = item.score > 0 ? '#30d158' : item.score < 0 ? '#ff453a' : '#8e8e93';
+      const sText = (item.score > 0 ? '+' : '') + '$' + item.score;
+      chip.innerHTML = `<span>${item.name}</span><span style="color:${sColor};font-weight:800;">(${sText})</span>`;
+      chip.onclick = () => {
+        selectedBenchPlayer = (selectedBenchPlayer === item.name) ? null : item.name;
+        renderSwapSlots();
+      };
+      benchList.append(chip);
+    });
+
+    // 若已揀選某位後備玩家，顯示四個座位畀用戶一鍵換返上檯
+    if (selectedBenchPlayer) {
+      const benchObj = state.bench.find(b => b.name === selectedBenchPlayer);
+      if (benchObj) {
+        seatPicker.classList.remove('hidden');
+        const bScoreStr = (benchObj.score > 0 ? '+' : '') + '$' + benchObj.score;
+        $('bench-picker-prompt').textContent = `揀選「${benchObj.name}」(繼承 ${bScoreStr}) 要接手邊個座位：`;
+        const btnsWrap = $('bench-seat-btns');
+        btnsWrap.replaceChildren();
+        state.names.forEach((curName, seatIdx) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'bench-seat-btn';
+          b.textContent = `換入 ${SEAT_LABELS[seatIdx]}（換走 ${curName}）`;
+          b.onclick = () => executeSwap(seatIdx, benchObj.name);
+          btnsWrap.append(b);
+        });
+      } else {
+        seatPicker.classList.add('hidden');
+      }
+    } else {
+      seatPicker.classList.add('hidden');
+    }
+  } else {
+    benchContainer.classList.add('hidden');
+    seatPicker.classList.add('hidden');
+  }
+
+  // 2. 渲染四個目前在席座位
   const container = $('swap-slots-list');
   container.replaceChildren();
 
@@ -653,7 +734,7 @@ function renderSwapSlots(){
         <span class="swap-slot-score" style="color:${scoreColor};">本輪分數：${scoreStr}</span>
       </div>
       <div class="swap-input-group">
-        <input type="text" id="swap-input-${i}" placeholder="輸入新接手玩家名字">
+        <input type="text" id="swap-input-${i}" placeholder="輸入新接手玩家名字（或後備區名字）">
         <button type="button" onclick="confirmSwap(${i})">確認換人</button>
       </div>
     `;
@@ -668,29 +749,63 @@ function confirmSwap(seatIdx){
     alert('請輸入新接手玩家的名字！');
     return;
   }
+  executeSwap(seatIdx, newName);
+}
+
+function executeSwap(seatIdx, newName){
+  if (!Array.isArray(state.bench)) state.bench = [];
   const oldName = state.names[seatIdx];
   if (newName === oldName) {
-    alert('新名字與現有玩家相同！');
+    alert('新名字與現有在席玩家相同！');
+    return;
+  }
+  if (state.names.includes(newName)) {
+    alert(`「${newName}」目前已經在其他座位打緊牌！`);
     return;
   }
 
   const oldScore = state.scores[seatIdx];
-  const scoreTxt = (oldScore > 0 ? '+' : '') + '$' + oldScore;
-  if (!confirm(`確定將【${SEAT_LABELS[seatIdx]}】由「${oldName}」換成「${newName}」？\n\n• 「${oldName}」本輪分數（${scoreTxt}）會封存記入個人統計。\n• 「${newName}」將由 $0 開始獨立計分。`)) {
+  const oldScoreTxt = (oldScore > 0 ? '+' : '') + '$' + oldScore;
+
+  // 檢查新玩家是否在後備區中
+  const benchIndex = state.bench.findIndex(b => b.name === newName);
+  const returningScore = benchIndex !== -1 ? state.bench[benchIndex].score : 0;
+  const retScoreTxt = (returningScore > 0 ? '+' : '') + '$' + returningScore;
+
+  const confirmMsg = benchIndex !== -1
+    ? `確定將【${SEAT_LABELS[seatIdx]}】由「${oldName}」換成後備區的「${newName}」？\n\n• 「${oldName}」(${oldScoreTxt}) 會移入後備區保存。\n• 「${newName}」會繼承剛才的分數（${retScoreTxt}）繼續計算！`
+    : `確定將【${SEAT_LABELS[seatIdx]}】由「${oldName}」換成新玩家「${newName}」？\n\n• 「${oldName}」(${oldScoreTxt}) 會移入後備區保存，隨時可換返。\n• 「${newName}」將由 $0 開始獨立計分。`;
+
+  if (!confirm(confirmMsg)) {
     return;
   }
 
   const before = {
     names: state.names.slice(),
     scores: state.scores.slice(),
+    bench: state.bench.map(b => ({ ...b })),
     pot: state.pot,
     isRake: state.isRake
   };
 
-  // 更新座位名字並將該座位本輪顯示分數重設為 0（由新玩家獨立開始）
+  // 若新玩家從後備區上檯，先從後備區移除
+  if (benchIndex !== -1) {
+    state.bench.splice(benchIndex, 1);
+  }
+
+  // 將被換出的舊玩家存入後備區（若已有同名紀錄則覆蓋更新最新分數）
+  const existingOldIdx = state.bench.findIndex(b => b.name === oldName);
+  if (existingOldIdx !== -1) {
+    state.bench[existingOldIdx].score = oldScore;
+  } else {
+    state.bench.push({ name: oldName, score: oldScore });
+  }
+
+  // 更新該座位名稱與繼承/初始分數
   state.names[seatIdx] = newName;
-  state.scores[seatIdx] = 0;
+  state.scores[seatIdx] = returningScore;
   state.revision++;
+  selectedBenchPlayer = null;
 
   state.history.push({
     id: crypto.randomUUID(),
@@ -702,10 +817,13 @@ function confirmSwap(seatIdx){
     oldName,
     newName,
     oldScore,
+    newScore: returningScore,
+    isFromBench: benchIndex !== -1,
     before,
     after: {
       names: state.names.slice(),
       scores: state.scores.slice(),
+      bench: state.bench.map(b => ({ ...b })),
       pot: state.pot,
       isRake: state.isRake
     }
@@ -849,6 +967,7 @@ function selectRoom(slot){
       const saved = JSON.parse(raw);
       if (saved && saved.names) {
         state = saved;
+        if (!Array.isArray(state.bench)) state.bench = [];
         showBoardView();
         initP2P();
         return;
@@ -857,9 +976,9 @@ function selectRoom(slot){
   } catch(e){}
   
   state = {
-    version: 4, revision: 0, startedAt: new Date().toISOString(), isRake: true,
+    version: 5, revision: 0, startedAt: new Date().toISOString(), isRake: true,
     names: ['東家','南家','西家','北家'],
-    scores: [0,0,0,0], pot: 0, history: [],
+    scores: [0,0,0,0], bench: [], pot: 0, history: [],
     seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
     isTimerPaused: false, pausedRemainingMs: 0
   };
@@ -1006,7 +1125,9 @@ function getLatestActionSummary(){
 
   if (lastLog.kind === 'swap') {
     const s = lastLog.oldScore;
-    return `換人：${SEAT_LABELS[lastLog.player]}「${lastLog.oldName}」(${s > 0 ? '+' : ''}$${s}) ➔ 「${lastLog.newName}」($0)`;
+    const ns = lastLog.newScore || 0;
+    const nsStr = (ns > 0 ? '+' : '') + '$' + ns;
+    return `換人：${SEAT_LABELS[lastLog.player]}「${lastLog.oldName}」(${s > 0 ? '+' : ''}$${s}) ➔ 「${lastLog.newName}」(${nsStr})`;
   }
 
   const names = lastLog.before.names;
@@ -1170,6 +1291,7 @@ function renderWizard(){
 }
 
 function commitAction(){
+  if (!Array.isArray(state.bench)) state.bench = [];
   const actionData = {
     action: currentAction, player: selectedPlayer, payer, horses: horseCount,
     amount: customAmount, kongWin: $('kong-win').checked
@@ -1178,6 +1300,7 @@ function commitAction(){
   const before = {
     names: state.names.slice(),
     scores: state.scores.slice(),
+    bench: state.bench.map(b => ({ ...b })),
     pot: state.pot,
     isRake: state.isRake
   };
@@ -1192,6 +1315,7 @@ function commitAction(){
     after: {
       names: state.names.slice(),
       scores: state.scores.slice(),
+      bench: state.bench.map(b => ({ ...b })),
       pot: state.pot,
       isRake: state.isRake
     }
@@ -1207,12 +1331,13 @@ function undoLastAction(){
   const lastLog = [...state.history].reverse().find(l => l.kind === 'action' || l.kind === 'swap');
   if (!lastLog) return;
   const msg = lastLog.kind === 'swap'
-    ? `確定撤銷剛才的換人操作？「${lastLog.newName}」會恢復為「${lastLog.oldName}」及原有分數。`
+    ? `確定撤銷剛才的換人操作？「${lastLog.newName}」會退回後備區，並恢復為「${lastLog.oldName}」及原有分數。`
     : '確定撤銷上一手？分數同抽水箱會返回該動作之前。';
   if (!confirm(msg)) return;
 
   state.names = lastLog.before.names.slice();
   state.scores = lastLog.before.scores.slice();
+  state.bench = Array.isArray(lastLog.before.bench) ? lastLog.before.bench.map(b => ({ ...b })) : [];
   state.pot = lastLog.before.pot;
   state.history.splice(state.history.indexOf(lastLog), 1);
   persist();
@@ -1222,8 +1347,9 @@ function undoLastAction(){
 /* 分數歸零 */
 function zeroScores(){
   if (isViewerOnly) return;
-  if (!confirm('確定將四位玩家分數、抽水箱同埋操作紀錄全部歸零清空？開始時間亦會重設。')) return;
+  if (!confirm('確定將四位玩家分數、後備區、抽水箱同埋操作紀錄全部歸零清空？開始時間亦會重設。')) return;
   state.scores = [0, 0, 0, 0];
+  state.bench = [];
   state.pot = 0;
   state.history = [];
   state.revision = 0;
@@ -1243,10 +1369,13 @@ function logTitle(e){
 function getActionDetailText(e){
   if (e.kind === 'swap') {
     const s = e.oldScore;
-    const scoreStr = s > 0 ? `<span class="pos">+$${s}</span>` : s < 0 ? `<span class="neg">-$${Math.abs(s)}</span>` : '$0';
+    const oldStr = s > 0 ? `<span class="pos">+$${s}</span>` : s < 0 ? `<span class="neg">-$${Math.abs(s)}</span>` : '$0';
+    const ns = e.newScore || 0;
+    const newStr = ns > 0 ? `<span class="pos">+$${ns}</span>` : ns < 0 ? `<span class="neg">-$${Math.abs(ns)}</span>` : '$0';
+    const statusDesc = e.isFromBench ? `由後備區上檯（繼承 ${newStr}）` : `新上陣（由 $0 開始）`;
     return {
       act: `【${SEAT_LABELS[e.player]}】由「${e.oldName}」換成「${e.newName}」上陣`,
-      diffText: `${e.oldName} 結算封存：${scoreStr} ｜ ${e.newName} 由 $0 重新開波`
+      diffText: `${e.oldName} 移入後備區：${oldStr} ｜ ${e.newName} ${statusDesc}`
     };
   }
 
@@ -1288,9 +1417,9 @@ function getActionDetailText(e){
   return { act, diffText: diffs.join('， ') };
 }
 
-/* 統計視窗 (按人頭自動累計所有在場及離場玩家戰績與淨輸贏) */
+/* 統計視窗 (按人頭自動累計所有在場及後備區玩家戰績與淨輸贏) */
 function openStats(){
-  const personStats = {}; // key: playerName
+  const personStats = {};
 
   const ensurePerson = (name) => {
     if (!personStats[name]) {
@@ -1310,11 +1439,16 @@ function openStats(){
     return personStats[name];
   };
 
-  // 先建立目前在席四位玩家
+  // 建立目前在席四位玩家
   state.names.forEach((n, idx) => {
     const p = ensurePerson(n);
     p.activeSeat = SEAT_LABELS[idx];
   });
+
+  // 確保後備區玩家也在名單內
+  if (Array.isArray(state.bench)) {
+    state.bench.forEach(b => ensurePerson(b.name));
+  }
 
   // 逐筆掃描歷史紀錄，按每手當時在席的人名精準計算淨輸贏及動作次數
   for (const log of state.history) {
@@ -1323,14 +1457,12 @@ function openStats(){
     const actorIdx = log.player;
     const actorName = namesAtTime[actorIdx];
 
-    // 累計每家分數變動
     for (let i = 0; i < 4; i++) {
       const pName = namesAtTime[i];
       const delta = log.after.scores[i] - log.before.scores[i];
       ensurePerson(pName).netScore += delta;
     }
 
-    // 累計發動動作玩家的戰績
     const actorObj = ensurePerson(actorName);
     if (log.action === 'win') actorObj.wins++;
     else if (log.action === 'rob') actorObj.robWins++;
@@ -1373,7 +1505,7 @@ function openStats(){
     const scoreStr = (p.netScore > 0 ? '+' : '') + '$' + p.netScore;
     const statusBadge = p.activeSeat
       ? `<span style="background:#1e3a24;color:#30d158;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:bold;">在席 (${p.activeSeat})</span>`
-      : `<span style="background:#3a3a3c;color:#aaa;padding:3px 8px;border-radius:6px;font-size:13px;">已換走</span>`;
+      : `<span style="background:#3a3010;color:#ffd60a;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:bold;">🪑 後備區</span>`;
 
     return `<tr>
       <td style="font-weight:bold;color:#ffd60a;">${p.name}</td>
