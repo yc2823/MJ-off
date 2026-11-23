@@ -84,12 +84,24 @@
       min-height: 0;
       padding: 6px;
       cursor: pointer;
-      transition: transform 0.08s, border-color 0.08s;
+      transition: transform 0.08s, border-color 0.15s, box-shadow 0.15s;
       position: relative;
     }
     .player-card:active { transform: scale(0.985); border-color: #ffd60a; }
+    /* 上鋪食糊玩家卡片外框微亮 */
+    .player-card.last-winner-card {
+      border-color: rgba(255, 214, 10, 0.65);
+      box-shadow: 0 0 18px rgba(255, 214, 10, 0.16);
+    }
     .seat-tag { position: absolute; top: 10px; left: 12px; font-size: 12px; color: #636366; font-weight: 700; }
-    .player-name { font-size: clamp(20px, 3.4vw, 34px); color: #e5e5ea; margin-bottom: 2px; font-weight: 700; text-align: center; }
+    .player-name { font-size: clamp(20px, 3.4vw, 34px); color: #e5e5ea; margin-bottom: 2px; font-weight: 700; text-align: center; transition: color 0.15s, font-size 0.15s; }
+    /* 上鋪食糊玩家名字高亮樣式 */
+    .player-name.last-winner-name {
+      color: #ffd60a;
+      font-weight: 900;
+      font-size: clamp(22px, 3.8vw, 38px);
+      text-shadow: 0 0 14px rgba(255, 214, 10, 0.45);
+    }
     .player-score { font-size: clamp(40px, 8vw, 84px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .score-pos { color: #30d158; }
     .score-neg { color: #ff453a; }
@@ -133,6 +145,7 @@
       .board-header-right { font-size: 11.5px; gap: 5px; }
       .player-card { border-radius: 14px; padding: 4px; }
       .player-name { font-size: 20px; }
+      .player-name.last-winner-name { font-size: 22px; }
       .player-score { font-size: 44px; }
       .pot-card { padding: 4px 14px; border-radius: 12px; }
       .pot-title { font-size: 16px; }
@@ -236,6 +249,8 @@
     .stats-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 16px; }
     .stats-table th, .stats-table td { padding: 12px 8px; border-bottom: 1px solid #3a3a3c; white-space: nowrap; }
     .stats-table th { background: #2c2c2e; color: #8e8e93; font-weight: bold; }
+    .stats-pot-row { background: #241d08; border-top: 2px solid #ffd60a; }
+    .stats-pot-row td { color: #ffd60a; font-weight: 800; border-bottom: none; }
     
     /* 歷史紀錄細節條目樣式 */
     .history-entry { padding: 14px 4px; border-bottom: 1px solid #333; }
@@ -515,13 +530,13 @@ const SEAT_LABELS = ['東位', '南位', '西位', '北位'];
 const RULES = { win: 20, horse: 20, rake: 10, ming: 30, an: 20, bu: 10, rob: 60, robHorse: 60, chaseNormal: 10, chaseWild: 30 };
 
 let state = {
-  version: 5,
+  version: 6,
   revision: 0,
   startedAt: new Date().toISOString(),
   isRake: true,
   names: ['東家','南家','西家','北家'],
   scores: [0,0,0,0],
-  bench: [], // 後備區陣列：[{ name: 'Joe', score: 220 }, ...]
+  bench: [],
   pot: 0,
   history: [],
   seatReminderInterval: 120,
@@ -532,7 +547,7 @@ let state = {
 
 let currentAction = 'win', selectedPlayer = null, payer = null, horseCount = 0, customAmount = 0;
 let wizardStep = 'player', wizardHistory = [];
-let selectedBenchPlayer = null; // 紀錄在後備區點擊準備換上的玩家名稱
+let selectedBenchPlayer = null;
 
 const ACTION_NAMES = {
   win: '自摸', ming: '明槓', an: '暗槓', bu: '補槓', rob: '搶槓',
@@ -666,7 +681,6 @@ function openSwapModal(){
 function renderSwapSlots(){
   if (!Array.isArray(state.bench)) state.bench = [];
 
-  // 1. 渲染後備區（若有離場玩家）
   const benchContainer = $('bench-container');
   const benchList = $('bench-list');
   const seatPicker = $('bench-seat-picker');
@@ -689,7 +703,6 @@ function renderSwapSlots(){
       benchList.append(chip);
     });
 
-    // 若已揀選某位後備玩家，顯示四個座位畀用戶一鍵換返上檯
     if (selectedBenchPlayer) {
       const benchObj = state.bench.find(b => b.name === selectedBenchPlayer);
       if (benchObj) {
@@ -717,7 +730,6 @@ function renderSwapSlots(){
     seatPicker.classList.add('hidden');
   }
 
-  // 2. 渲染四個目前在席座位
   const container = $('swap-slots-list');
   container.replaceChildren();
 
@@ -767,7 +779,6 @@ function executeSwap(seatIdx, newName){
   const oldScore = state.scores[seatIdx];
   const oldScoreTxt = (oldScore > 0 ? '+' : '') + '$' + oldScore;
 
-  // 檢查新玩家是否在後備區中
   const benchIndex = state.bench.findIndex(b => b.name === newName);
   const returningScore = benchIndex !== -1 ? state.bench[benchIndex].score : 0;
   const retScoreTxt = (returningScore > 0 ? '+' : '') + '$' + returningScore;
@@ -788,12 +799,10 @@ function executeSwap(seatIdx, newName){
     isRake: state.isRake
   };
 
-  // 若新玩家從後備區上檯，先從後備區移除
   if (benchIndex !== -1) {
     state.bench.splice(benchIndex, 1);
   }
 
-  // 將被換出的舊玩家存入後備區（若已有同名紀錄則覆蓋更新最新分數）
   const existingOldIdx = state.bench.findIndex(b => b.name === oldName);
   if (existingOldIdx !== -1) {
     state.bench[existingOldIdx].score = oldScore;
@@ -801,7 +810,6 @@ function executeSwap(seatIdx, newName){
     state.bench.push({ name: oldName, score: oldScore });
   }
 
-  // 更新該座位名稱與繼承/初始分數
   state.names[seatIdx] = newName;
   state.scores[seatIdx] = returningScore;
   state.revision++;
@@ -976,7 +984,7 @@ function selectRoom(slot){
   } catch(e){}
   
   state = {
-    version: 5, revision: 0, startedAt: new Date().toISOString(), isRake: true,
+    version: 6, revision: 0, startedAt: new Date().toISOString(), isRake: true,
     names: ['東家','南家','西家','北家'],
     scores: [0,0,0,0], bench: [], pot: 0, history: [],
     seatReminderInterval: 120, nextSeatAlertAt: Date.now() + 120 * 60 * 1000,
@@ -1118,6 +1126,24 @@ function getRoundsMap(logs) {
   return map;
 }
 
+/* 找出上一鋪食糊（自摸／槓上自摸／搶槓／特別糊牌）的座位編號 */
+function getLastWinnerSeat(){
+  const logs = state.history || [];
+  for (let i = logs.length - 1; i >= 0; i--) {
+    const l = logs[i];
+    if (l.kind !== 'action') continue;
+    const isWin = l.action === 'win' || l.action === 'rob' || l.action === 'special_win' || (['ming','an','bu'].includes(l.action) && l.kongWin);
+    if (isWin) {
+      // 確認該食糊玩家名字與目前該座位在席玩家名字一致
+      if (l.before && l.before.names && l.before.names[l.player] === state.names[l.player]) {
+        return l.player;
+      }
+      return -1;
+    }
+  }
+  return -1;
+}
+
 function getLatestActionSummary(){
   const logs = state.history || [];
   const lastLog = [...logs].reverse().find(l => l.kind === 'action' || l.kind === 'swap');
@@ -1170,8 +1196,17 @@ function renderBoard(){
   $('pot-card').classList.toggle('hidden', !state.isRake);
   $('pot-score').textContent = '$' + state.pot;
 
+  const lastWinnerSeat = getLastWinnerSeat();
+
   state.names.forEach((n, i) => {
-    $('disp-name-' + i).textContent = n;
+    const nameEl = $('disp-name-' + i);
+    const cardEl = $('card-' + i);
+    const isLastWin = (i === lastWinnerSeat);
+
+    nameEl.textContent = isLastWin ? `👑 ${n}` : n;
+    nameEl.classList.toggle('last-winner-name', isLastWin);
+    cardEl.classList.toggle('last-winner-card', isLastWin);
+
     const el = $('score-' + i), v = state.scores[i];
     el.textContent = (v > 0 ? '+' : '') + v;
     el.className = 'player-score ' + (v > 0 ? 'score-pos' : v < 0 ? 'score-neg' : 'score-zero');
@@ -1417,7 +1452,7 @@ function getActionDetailText(e){
   return { act, diffText: diffs.join('， ') };
 }
 
-/* 統計視窗 (按人頭自動累計所有在場及後備區玩家戰績與淨輸贏) */
+/* 統計視窗 (散場找數榜含抽水箱總額) */
 function openStats(){
   const personStats = {};
 
@@ -1439,18 +1474,15 @@ function openStats(){
     return personStats[name];
   };
 
-  // 建立目前在席四位玩家
   state.names.forEach((n, idx) => {
     const p = ensurePerson(n);
     p.activeSeat = SEAT_LABELS[idx];
   });
 
-  // 確保後備區玩家也在名單內
   if (Array.isArray(state.bench)) {
     state.bench.forEach(b => ensurePerson(b.name));
   }
 
-  // 逐筆掃描歷史紀錄，按每手當時在席的人名精準計算淨輸贏及動作次數
   for (const log of state.history) {
     if (log.kind !== 'action') continue;
     const namesAtTime = log.before.names;
@@ -1500,7 +1532,7 @@ function openStats(){
     <div class="stats-badge-card"><div class="stats-badge-title">🎯 追牌苦主 (${topChased.val} 次)</div><div class="stats-badge-val">${topChased.names}</div></div>
   `;
 
-  $('person-stats-body').innerHTML = allPlayers.map(p => {
+  let rowsHtml = allPlayers.map(p => {
     const scoreColor = p.netScore > 0 ? '#30d158' : p.netScore < 0 ? '#ff453a' : '#8e8e93';
     const scoreStr = (p.netScore > 0 ? '+' : '') + '$' + p.netScore;
     const statusBadge = p.activeSeat
@@ -1520,6 +1552,20 @@ function openStats(){
       <td style="font-weight:bold;color:#30d158;">${p.totalHorses}</td>
     </tr>`;
   }).join('');
+
+  // 若啟用抽水版或水箱有結餘，於散場找數榜加入抽水箱總額列
+  if (state.isRake || state.pot > 0) {
+    rowsHtml += `
+      <tr class="stats-pot-row">
+        <td>💰 抽水箱</td>
+        <td><span style="background:#3a3010;color:#ffd60a;padding:3px 8px;border-radius:6px;font-size:13px;font-weight:bold;">公家水箱</span></td>
+        <td style="font-size:19px;">+$${state.pot}</td>
+        <td colspan="7" style="text-align:left;padding-left:14px;font-size:14px;color:#e5e5ea;font-weight:normal;">中馬每隻抽 $10 累計總額（散場總帳平衡核對）</td>
+      </tr>
+    `;
+  }
+
+  $('person-stats-body').innerHTML = rowsHtml;
 
   $('stats-menu').showModal();
 }
